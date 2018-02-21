@@ -15,6 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
@@ -29,6 +34,7 @@ public class UploadQueue implements Runnable {
     private long waitTime;
     private int maxRetries;
     private boolean stop;
+    private String apiEndpoint;
     private String errorEmailRecipients;
     private MessageGatewayService messageGatewayService;
 
@@ -39,6 +45,7 @@ public class UploadQueue implements Runnable {
         long maxSize,
         long waitTime,
         int maxRetries,
+        String apiEndpoint,
         String errorEmailRecipients,
         MessageGatewayService messageGatewayService,
         List<ContentScoreUpdateRequest> pendingBatches) {
@@ -46,6 +53,7 @@ public class UploadQueue implements Runnable {
         this.maxSize = maxSize;
         this.waitTime = waitTime;
         this.maxRetries = maxRetries;
+        this.apiEndpoint = apiEndpoint;
         this.errorEmailRecipients = errorEmailRecipients;
         this.messageGatewayService = messageGatewayService;
 
@@ -157,7 +165,18 @@ public class UploadQueue implements Runnable {
     }
 
     private void sendRequest(List<ContentScoreUpdateRequest> requests) throws Exception {
-        //TODO: Something with Client/WebTarget probably
+        Client client = ClientBuilder.newClient();
+        Response response = client
+            .target(apiEndpoint)
+            .request()
+            .post(Entity.entity(requests, MediaType.APPLICATION_JSON));
+
+        if (response.getStatus() >= 500) {
+            throw new Exception("Some internal exception");
+        }
+        if (response.getStatus() >= 400) {
+            throw new Exception("Some client exception");
+        }
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
