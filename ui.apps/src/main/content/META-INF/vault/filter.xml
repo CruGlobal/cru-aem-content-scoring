@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
+    <filter root="/apps/aem-content-scoring">
+        <exclude pattern="/apps/aem-content-scoring/install" />
+    </filter>
     <filter root="/etc/designs/aem-content-scoring"/>
+    <filter root="/etc/workflow/launcher/config/aem-content-scoring"/>
+    <filter root="/etc/workflow/models/aem-content-scoring"/>
 </workspaceFilter>
