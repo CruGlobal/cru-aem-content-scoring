@@ -118,6 +118,14 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         request.setContentScores(contentScores);
 
+        String scoreConfidence = pageProperties.get("scoreConfidence", String.class);
+
+        if (scoreConfidence != null) {
+            request.setConfidence(new BigDecimal(scoreConfidence));
+        } else {
+            request.setConfidence(BigDecimal.ZERO);
+        }
+
         sendUpdateRequest(request);
         setContentScoreUpdatedDate(page);
     }
