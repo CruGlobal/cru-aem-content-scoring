@@ -1,10 +1,11 @@
 package org.cru.contentscoring.core.models;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 public class ContentScoreUpdateRequest {
     private String contentId;
-    private BigDecimal contentScore;
+    private Map<ScoreType, BigDecimal> contentScores;
 
     public String getContentId() {
         return contentId;
@@ -14,11 +15,11 @@ public class ContentScoreUpdateRequest {
         this.contentId = contentId;
     }
 
-    public BigDecimal getContentScore() {
-        return contentScore;
+    public Map<ScoreType, BigDecimal> getContentScores() {
+        return contentScores;
     }
 
-    public void setContentScore(final BigDecimal contentScore) {
-        this.contentScore = contentScore;
+    public void setContentScores(final Map<ScoreType, BigDecimal> contentScores) {
+        this.contentScores = contentScores;
     }
 }

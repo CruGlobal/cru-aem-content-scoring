@@ -2,6 +2,7 @@ package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.wcm.api.Page;
+import com.google.common.collect.Maps;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -11,6 +12,7 @@ import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
+import org.cru.contentscoring.core.models.ScoreType;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
 import org.slf4j.Logger;
@@ -100,21 +102,52 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     public void updateContentScore(final Page page) throws RepositoryException {
         ValueMap pageProperties = page.getProperties();
 
-        if (pageProperties.get("contentScore") == null) {
+        if (hasNoScores(pageProperties)) {
             // Nothing to update
             // TODO: should we send a delete request in case it exists in the centralized storage?
             return;
         }
 
-        BigDecimal pageScore = new BigDecimal((String) pageProperties.get("contentScore"));
         String pageId = page.getPath();
 
         ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
         request.setContentId(pageId);
-        request.setContentScore(pageScore);
+
+        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        addScores(pageProperties, contentScores);
+
+        request.setContentScores(contentScores);
 
         sendUpdateRequest(request);
         setContentScoreUpdatedDate(page);
+    }
+
+    private boolean hasNoScores(final ValueMap pageProperties) {
+        return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) == null
+            && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) == null
+            && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) == null
+            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) == null;
+    }
+
+    private void addScores(final ValueMap pageProperties, final Map<ScoreType, BigDecimal> contentScores) {
+        String zero = "0";
+
+        String unawareString = (String) pageProperties.getOrDefault(ScoreType.UNAWARE.getPropertyName(), zero);
+        BigDecimal unawareScore = new BigDecimal(unawareString);
+
+        String curiousString = (String) pageProperties.getOrDefault(ScoreType.CURIOUS.getPropertyName(), zero);
+        BigDecimal curiousScore = new BigDecimal(curiousString);
+
+        String followerString = (String) pageProperties.getOrDefault(ScoreType.FOLLOWER.getPropertyName(), zero);
+        BigDecimal followerScore = new BigDecimal(followerString);
+
+        String guideString = (String) pageProperties.getOrDefault(ScoreType.GUIDE.getPropertyName(), zero);
+        BigDecimal guideScore = new BigDecimal(guideString);
+
+        contentScores.put(ScoreType.UNAWARE, unawareScore);
+        contentScores.put(ScoreType.CURIOUS, curiousScore);
+        contentScores.put(ScoreType.FOLLOWER, followerScore);
+        contentScores.put(ScoreType.GUIDE, guideScore);
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
