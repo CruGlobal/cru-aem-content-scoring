@@ -105,7 +105,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         if (hasNoScores(pageProperties)) {
             // Nothing to update
-            // TODO: should we send a delete request in case it exists in the centralized storage?
             return;
         }
 
