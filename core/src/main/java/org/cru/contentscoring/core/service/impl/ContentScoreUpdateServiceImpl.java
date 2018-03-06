@@ -146,7 +146,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     private int getScore(final ValueMap pageProperties, final String scoreName) {
         String score = pageProperties.get(scoreName, String.class);
         Preconditions.checkNotNull(score, scoreName + " is required");
-        return Integer.parseInt(score);
+        int parsedScore = Integer.parseInt(score);
+        Preconditions.checkArgument(
+            parsedScore >= 1 && parsedScore <= 5,
+            String.format("%s must be between 1 and 5, but is %d", scoreName, parsedScore));
+
+        return parsedScore;
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
