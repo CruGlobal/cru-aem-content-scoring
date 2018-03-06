@@ -120,7 +120,7 @@ public class UploadQueue implements Runnable {
 
     private void updateContentScoreRequest(List<ContentScoreUpdateRequest> requests) {
         try {
-            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequest(requests);
+            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequestBatch(requests);
 
             if (!failedRequests.isEmpty()) {
                 handleFailedFirstAttempt(new ArrayList<>(failedRequests.keySet()));
@@ -138,7 +138,7 @@ public class UploadQueue implements Runnable {
 
     private void updateContentScoreRequest(RetryElement retryElement) throws EmailException, AddressException {
         try {
-            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequest(retryElement.getBatch());
+            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequestBatch(retryElement.getBatch());
 
             if (failedRequests.isEmpty()) {
                 LOG.info("RetryElement successfully indexed {}", retryElement.toString());
@@ -190,7 +190,7 @@ public class UploadQueue implements Runnable {
             + "<p>" + error.replace("\n", "</p><p>") + "</p>";
     }
 
-    private Map<ContentScoreUpdateRequest, String> sendRequest(List<ContentScoreUpdateRequest> requests) throws Exception {
+    private Map<ContentScoreUpdateRequest, String> sendRequestBatch(List<ContentScoreUpdateRequest> requests) throws Exception {
         Client client = ClientBuilder.newClient();
         WebTarget webTarget = client
             .target(apiEndpoint)
@@ -199,33 +199,40 @@ public class UploadQueue implements Runnable {
         Map<ContentScoreUpdateRequest, String> failedRequests = Maps.newHashMap();
 
         for (ContentScoreUpdateRequest request : requests) {
-            Response response = webTarget
-                .request()
-                .post(Entity.entity(request, MediaType.APPLICATION_JSON));
-
-            if (response.getStatus() != 200) {
-                String errorMessage = response.readEntity(String.class);
-
-                if (response.getStatus() >= 500) {
-                    LOG.debug(
-                        "Internal server error when sending request for {}: {}",
-                        request.getUri(),
-                        errorMessage);
-                    failedRequests.put(request, errorMessage);
-                    continue;
-                }
-                if (response.getStatus() >= 400) {
-                    LOG.debug(
-                        "Client error when sending request for {}: {}",
-                        request.getUri(),
-                        errorMessage);
-                    failedRequests.put(request, errorMessage); //TODO: Should we retry client exceptions?
-                }
-            }
-
+            sendRequest(webTarget, request, failedRequests);
         }
 
         return failedRequests;
+    }
+
+    private void sendRequest(
+        WebTarget webTarget,
+        ContentScoreUpdateRequest request,
+        Map<ContentScoreUpdateRequest, String> failedRequests) {
+
+        Response response = webTarget
+            .request()
+            .post(Entity.entity(request, MediaType.APPLICATION_JSON));
+
+        if (response.getStatus() != 200) {
+            String errorMessage = response.readEntity(String.class);
+
+            if (response.getStatus() >= 500) {
+                LOG.debug(
+                    "Internal server error when sending request for {}: {}",
+                    request.getUri(),
+                    errorMessage);
+                failedRequests.put(request, errorMessage);
+                return;
+            }
+            if (response.getStatus() >= 400) {
+                LOG.debug(
+                    "Client error when sending request for {}: {}",
+                    request.getUri(),
+                    errorMessage);
+                failedRequests.put(request, errorMessage); //TODO: Should we retry client exceptions?
+            }
+        }
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
