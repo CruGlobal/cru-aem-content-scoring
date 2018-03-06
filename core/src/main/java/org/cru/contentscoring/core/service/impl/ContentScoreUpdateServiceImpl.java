@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.wcm.api.Page;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -12,6 +11,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
+import org.cru.contentscoring.core.models.ContentScore;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.models.ScoreType;
 import org.cru.contentscoring.core.queue.UploadQueue;
@@ -112,20 +112,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         String pageId = page.getPath();
 
         ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
-        request.setContentId(pageId);
-
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
-        addScores(pageProperties, contentScores);
-
-        request.setContentScores(contentScores);
-
-        String scoreConfidence = pageProperties.get("scoreConfidence", String.class);
-
-        if (scoreConfidence != null) {
-            request.setConfidence(new BigDecimal(scoreConfidence));
-        } else {
-            request.setConfidence(BigDecimal.ZERO);
-        }
+        request.setUri(pageId);
+        request.setScore(createScore(pageProperties));
 
         sendUpdateRequest(request);
         setContentScoreUpdatedDate(page);
@@ -140,25 +128,27 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    void addScores(final ValueMap pageProperties, final Map<ScoreType, BigDecimal> contentScores) {
+    ContentScore createScore(final ValueMap pageProperties) {
         String zero = "0";
 
+        ContentScore contentScore = new ContentScore();
+
         String unawareString = (String) pageProperties.getOrDefault(ScoreType.UNAWARE.getPropertyName(), zero);
-        BigDecimal unawareScore = new BigDecimal(unawareString);
+        contentScore.setUnaware(new BigDecimal(unawareString));
 
         String curiousString = (String) pageProperties.getOrDefault(ScoreType.CURIOUS.getPropertyName(), zero);
-        BigDecimal curiousScore = new BigDecimal(curiousString);
+        contentScore.setCurious(new BigDecimal(curiousString));
 
         String followerString = (String) pageProperties.getOrDefault(ScoreType.FOLLOWER.getPropertyName(), zero);
-        BigDecimal followerScore = new BigDecimal(followerString);
+        contentScore.setFollower(new BigDecimal(followerString));
 
         String guideString = (String) pageProperties.getOrDefault(ScoreType.GUIDE.getPropertyName(), zero);
-        BigDecimal guideScore = new BigDecimal(guideString);
+        contentScore.setGuide(new BigDecimal(guideString));
 
-        contentScores.put(ScoreType.UNAWARE, unawareScore);
-        contentScores.put(ScoreType.CURIOUS, curiousScore);
-        contentScores.put(ScoreType.FOLLOWER, followerScore);
-        contentScores.put(ScoreType.GUIDE, guideScore);
+        String scoreConfidence = (String) pageProperties.getOrDefault("scoreConfidence", zero);
+        contentScore.setConfidence(new BigDecimal(scoreConfidence));
+
+        return contentScore;
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
@@ -167,7 +157,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             queueManagerThread.start();
         }
         internalQueueManager.put(request);
-        LOG.debug("Page {} added to the queue", request.getContentId());
+        LOG.debug("Page {} added to the queue", request.getUri());
     }
 
     @VisibleForTesting

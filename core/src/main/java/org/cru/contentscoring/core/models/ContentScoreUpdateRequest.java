@@ -1,34 +1,22 @@
 package org.cru.contentscoring.core.models;
 
-import java.math.BigDecimal;
-import java.util.Map;
-
 public class ContentScoreUpdateRequest {
-    private String contentId;
-    private Map<ScoreType, BigDecimal> contentScores;
-    private BigDecimal confidence;
+    private String uri;
+    private ContentScore score;
 
-    public String getContentId() {
-        return contentId;
+    public String getUri() {
+        return uri;
     }
 
-    public void setContentId(final String contentId) {
-        this.contentId = contentId;
+    public void setUri(final String uri) {
+        this.uri = uri;
     }
 
-    public Map<ScoreType, BigDecimal> getContentScores() {
-        return contentScores;
+    public ContentScore getScore() {
+        return score;
     }
 
-    public void setContentScores(final Map<ScoreType, BigDecimal> contentScores) {
-        this.contentScores = contentScores;
-    }
-
-    public BigDecimal getConfidence() {
-        return confidence;
-    }
-
-    public void setConfidence(final BigDecimal confidence) {
-        this.confidence = confidence;
+    public void setScore(final ContentScore score) {
+        this.score = score;
     }
 }

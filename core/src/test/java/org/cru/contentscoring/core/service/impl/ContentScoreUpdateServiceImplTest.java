@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
+import org.cru.contentscoring.core.models.ContentScore;
 import org.cru.contentscoring.core.models.ScoreType;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,86 +103,71 @@ public class ContentScoreUpdateServiceImplTest {
     }
 
     @Test
-    public void testAddUnawareScore() {
+    public void testCreateUnawareOnlyScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
 
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        ContentScore contentScore = updateService.createScore(pageProperties);
 
-        updateService.addScores(pageProperties, contentScores);
-
-        assertThat(contentScores.size(), is(equalTo(4)));
-        assertThat(contentScores.get(ScoreType.UNAWARE), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
-        assertThat(contentScores.get(ScoreType.CURIOUS), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.FOLLOWER), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.GUIDE), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
+        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
     }
 
     @Test
-    public void testAddCuriousScore() {
+    public void testCreateCuriousOnlyScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
 
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        ContentScore contentScore = updateService.createScore(pageProperties);
 
-        updateService.addScores(pageProperties, contentScores);
-
-        assertThat(contentScores.size(), is(equalTo(4)));
-        assertThat(contentScores.get(ScoreType.UNAWARE), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.CURIOUS), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
-        assertThat(contentScores.get(ScoreType.FOLLOWER), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.GUIDE), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getCurious(), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
+        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
     }
 
     @Test
-    public void testAddFollowerScore() {
+    public void testCreateFollowerOnlyScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
 
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        ContentScore contentScore = updateService.createScore(pageProperties);
 
-        updateService.addScores(pageProperties, contentScores);
-
-        assertThat(contentScores.size(), is(equalTo(4)));
-        assertThat(contentScores.get(ScoreType.UNAWARE), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.CURIOUS), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.FOLLOWER), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
-        assertThat(contentScores.get(ScoreType.GUIDE), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getFollower(), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
+        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
     }
 
     @Test
-    public void testAddGuideScore() {
+    public void testCreateGuideOnlyScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
 
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        ContentScore contentScore = updateService.createScore(pageProperties);
 
-        updateService.addScores(pageProperties, contentScores);
-
-        assertThat(contentScores.size(), is(equalTo(4)));
-        assertThat(contentScores.get(ScoreType.UNAWARE), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.CURIOUS), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.FOLLOWER), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScores.get(ScoreType.GUIDE), is(equalTo(new BigDecimal(GUIDE_SCORE))));
+        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getGuide(), is(equalTo(new BigDecimal(GUIDE_SCORE))));
     }
 
     @Test
-    public void testAddAllScores() {
+    public void testCreateAllScores() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
 
-        Map<ScoreType, BigDecimal> contentScores = Maps.newHashMap();
+        ContentScore contentScore = updateService.createScore(pageProperties);
 
-        updateService.addScores(pageProperties, contentScores);
-
-        assertThat(contentScores.size(), is(equalTo(4)));
-        assertThat(contentScores.get(ScoreType.UNAWARE), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
-        assertThat(contentScores.get(ScoreType.CURIOUS), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
-        assertThat(contentScores.get(ScoreType.FOLLOWER), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
-        assertThat(contentScores.get(ScoreType.GUIDE), is(equalTo(new BigDecimal(GUIDE_SCORE))));
+        assertThat(contentScore.getUnaware(), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
+        assertThat(contentScore.getCurious(), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
+        assertThat(contentScore.getFollower(), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
+        assertThat(contentScore.getGuide(), is(equalTo(new BigDecimal(GUIDE_SCORE))));
     }
 
     @Test
