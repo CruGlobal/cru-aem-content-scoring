@@ -40,7 +40,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     @Property(label = "Max Size", description = "Max size of the batch sent to the Content Scoring API.")
     static final String MAX_SIZE = "maxSize";
 
-    private static final Long DEFAULT_WAIT_TIME = 30000L;
+    private static final Long DEFAULT_WAIT_TIME = 30L * 1000L;
     @Property(label = "Wait Time", description = "Time (in milliseconds) to wait between sending.")
     static final String WAIT_TIME = "waitTime";
 
