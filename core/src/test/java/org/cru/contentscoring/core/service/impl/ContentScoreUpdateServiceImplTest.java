@@ -15,6 +15,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -101,56 +102,59 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(updateService.hasNoScores(pageProperties), is(false));
     }
 
-    @Test
-    public void testCreateUnawareOnlyScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
-
-        ContentScore contentScore = updateService.createScore(pageProperties);
-
-        assertThat(contentScore.getUnaware(), is(equalTo(Integer.parseInt(UNAWARE_SCORE))));
-        assertThat(contentScore.getCurious(), is(equalTo(0)));
-        assertThat(contentScore.getFollower(), is(equalTo(0)));
-        assertThat(contentScore.getGuide(), is(equalTo(0)));
-    }
-
-    @Test
-    public void testCreateCuriousOnlyScore() {
+    @Test(expected = NullPointerException.class)
+    public void testCreateScoreMissingUnaware() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
-
-        ContentScore contentScore = updateService.createScore(pageProperties);
-
-        assertThat(contentScore.getUnaware(), is(equalTo(0)));
-        assertThat(contentScore.getCurious(), is(equalTo(Integer.parseInt(CURIOUS_SCORE))));
-        assertThat(contentScore.getFollower(), is(equalTo(0)));
-        assertThat(contentScore.getGuide(), is(equalTo(0)));
-    }
-
-    @Test
-    public void testCreateFollowerOnlyScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
+        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put("scoreConfidence", "1");
 
-        ContentScore contentScore = updateService.createScore(pageProperties);
-
-        assertThat(contentScore.getUnaware(), is(equalTo(0)));
-        assertThat(contentScore.getCurious(), is(equalTo(0)));
-        assertThat(contentScore.getFollower(), is(equalTo(Integer.parseInt(FOLLOWER_SCORE))));
-        assertThat(contentScore.getGuide(), is(equalTo(0)));
+        updateService.createScore(pageProperties);
     }
 
-    @Test
-    public void testCreateGuideOnlyScore() {
+    @Test(expected = NullPointerException.class)
+    public void testCreateScoreMissingCurious() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
+        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put("scoreConfidence", "0.75");
+
+        updateService.createScore(pageProperties);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCreateScoreMissingFollower() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
+        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put("scoreConfidence", "0.51");
+
+        updateService.createScore(pageProperties);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCreateScoreMissingGuide() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
+        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
+        pageProperties.put("scoreConfidence", "0.99");
+
+        updateService.createScore(pageProperties);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void testCreateScoreMissingConfidence() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
+        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
 
-        ContentScore contentScore = updateService.createScore(pageProperties);
-
-        assertThat(contentScore.getUnaware(), is(equalTo(0)));
-        assertThat(contentScore.getCurious(), is(equalTo(0)));
-        assertThat(contentScore.getFollower(), is(equalTo(0)));
-        assertThat(contentScore.getGuide(), is(equalTo(Integer.parseInt(GUIDE_SCORE))));
+        updateService.createScore(pageProperties);
     }
 
     @Test
@@ -160,6 +164,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put("scoreConfidence", "0.01");
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
@@ -167,6 +172,7 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(contentScore.getCurious(), is(equalTo(Integer.parseInt(CURIOUS_SCORE))));
         assertThat(contentScore.getFollower(), is(equalTo(Integer.parseInt(FOLLOWER_SCORE))));
         assertThat(contentScore.getGuide(), is(equalTo(Integer.parseInt(GUIDE_SCORE))));
+        assertThat(contentScore.getConfidence(), is(equalTo(new BigDecimal("0.01"))));
     }
 
     @Test

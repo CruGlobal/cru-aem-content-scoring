@@ -3,6 +3,7 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.wcm.api.Page;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -128,26 +129,24 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     @VisibleForTesting
     ContentScore createScore(final ValueMap pageProperties) {
-        String zero = "0";
-
         ContentScore contentScore = new ContentScore();
 
-        String unawareString = (String) pageProperties.getOrDefault(ScoreType.UNAWARE.getPropertyName(), zero);
-        contentScore.setUnaware(Integer.parseInt(unawareString));
+        contentScore.setUnaware(getScore(pageProperties, ScoreType.UNAWARE.getPropertyName()));
+        contentScore.setCurious(getScore(pageProperties, ScoreType.CURIOUS.getPropertyName()));
+        contentScore.setFollower(getScore(pageProperties, ScoreType.FOLLOWER.getPropertyName()));
+        contentScore.setGuide(getScore(pageProperties, ScoreType.GUIDE.getPropertyName()));
 
-        String curiousString = (String) pageProperties.getOrDefault(ScoreType.CURIOUS.getPropertyName(), zero);
-        contentScore.setCurious(Integer.parseInt(curiousString));
-
-        String followerString = (String) pageProperties.getOrDefault(ScoreType.FOLLOWER.getPropertyName(), zero);
-        contentScore.setFollower(Integer.parseInt(followerString));
-
-        String guideString = (String) pageProperties.getOrDefault(ScoreType.GUIDE.getPropertyName(), zero);
-        contentScore.setGuide(Integer.parseInt(guideString));
-
-        String scoreConfidence = (String) pageProperties.getOrDefault("scoreConfidence", zero);
+        String scoreConfidence = pageProperties.get("scoreConfidence", String.class);
+        Preconditions.checkNotNull(scoreConfidence, "scoreConfidence is required");
         contentScore.setConfidence(new BigDecimal(scoreConfidence));
 
         return contentScore;
+    }
+
+    private int getScore(final ValueMap pageProperties, final String scoreName) {
+        String score = pageProperties.get(scoreName, String.class);
+        Preconditions.checkNotNull(score, scoreName + " is required");
+        return Integer.parseInt(score);
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
