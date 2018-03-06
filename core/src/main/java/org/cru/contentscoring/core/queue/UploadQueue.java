@@ -18,6 +18,7 @@ import javax.mail.internet.InternetAddress;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
@@ -166,17 +167,21 @@ public class UploadQueue implements Runnable {
 
     private void sendRequest(List<ContentScoreUpdateRequest> requests) throws Exception {
         Client client = ClientBuilder.newClient();
-        Response response = client
+        WebTarget webTarget = client
             .target(apiEndpoint)
-            .path("score")
-            .request()
-            .post(Entity.entity(requests, MediaType.APPLICATION_JSON));
+            .path("score");
 
-        if (response.getStatus() >= 500) {
-            throw new Exception("Some internal exception");
-        }
-        if (response.getStatus() >= 400) {
-            throw new Exception("Some client exception");
+        for (ContentScoreUpdateRequest request : requests) {
+            Response response = webTarget
+                .request()
+                .post(Entity.entity(request, MediaType.APPLICATION_JSON));
+
+            if (response.getStatus() >= 500) {
+                throw new Exception("Some internal exception");
+            }
+            if (response.getStatus() >= 400) {
+                throw new Exception("Some client exception");
+            }
         }
     }
 
