@@ -168,6 +168,7 @@ public class UploadQueue implements Runnable {
         Client client = ClientBuilder.newClient();
         Response response = client
             .target(apiEndpoint)
+            .path("score")
             .request()
             .post(Entity.entity(requests, MediaType.APPLICATION_JSON));
 
