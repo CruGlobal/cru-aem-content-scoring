@@ -4,7 +4,9 @@ import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
@@ -24,8 +26,10 @@ import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UploadQueue implements Runnable {
@@ -116,31 +120,52 @@ public class UploadQueue implements Runnable {
 
     private void updateContentScoreRequest(List<ContentScoreUpdateRequest> requests) {
         try {
-            sendRequest(requests);
+            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequest(requests);
+
+            if (!failedRequests.isEmpty()) {
+                handleFailedFirstAttempt(new ArrayList<>(failedRequests.keySet()));
+            }
         } catch (Exception e) {
-            RetryElement retryElement = new RetryElement(requests, 1);
-            retryQueue.add(retryElement);
-            LOG.warn("RetryElement Added {}", retryElement.toString());
+            handleFailedFirstAttempt(requests);
         }
+    }
+
+    private void handleFailedFirstAttempt(List<ContentScoreUpdateRequest> failedRequests) {
+        RetryElement retryElement = new RetryElement(failedRequests, 1);
+        retryQueue.add(retryElement);
+        LOG.warn("RetryElement Added {}", retryElement.toString());
     }
 
     private void updateContentScoreRequest(RetryElement retryElement) throws EmailException, AddressException {
         try {
-            sendRequest(retryElement.getBatch());
-            LOG.info("RetryElement successfully indexed {}", retryElement.toString());
-        } catch (Exception e) {
-            if (maxRetries >= retryElement.incrementRetries()) {
-                retryQueue.add(retryElement);
-                LOG.warn("RetryElement Added {}", retryElement.toString());
-            } else {
-                String error = MessageFormat.format(
-                    "UploadQueue: Max number of retries reached for: {0}\nError message was: {1}",
-                    retryElement.toString(),
-                    e.getMessage());
+            Map<ContentScoreUpdateRequest, String> failedRequests = sendRequest(retryElement.getBatch());
 
-                LOG.error(error);
-                sendEmail(error);
+            if (failedRequests.isEmpty()) {
+                LOG.info("RetryElement successfully indexed {}", retryElement.toString());
+                return;
             }
+            RetryElement narrowedRetryElement = new RetryElement(
+                new ArrayList<>(failedRequests.keySet()),
+                retryElement.getRetries());
+
+            handleFailedRetry(narrowedRetryElement, Joiner.on(',').join(failedRequests.values()));
+        } catch (Exception e) {
+            handleFailedRetry(retryElement, e.getMessage());
+        }
+    }
+
+    private void handleFailedRetry(RetryElement retryElement, String errorMessage) throws EmailException, AddressException {
+        if (maxRetries >= retryElement.incrementRetries()) {
+            retryQueue.add(retryElement);
+            LOG.warn("RetryElement Added {}", retryElement.toString());
+        } else {
+            String error = MessageFormat.format(
+                "UploadQueue: Max number of retries reached for: {0}\nError message was: {1}",
+                retryElement.toString(),
+                errorMessage);
+
+            LOG.error(error);
+            sendEmail(error);
         }
     }
 
@@ -165,24 +190,42 @@ public class UploadQueue implements Runnable {
             + "<p>" + error.replace("\n", "</p><p>") + "</p>";
     }
 
-    private void sendRequest(List<ContentScoreUpdateRequest> requests) throws Exception {
+    private Map<ContentScoreUpdateRequest, String> sendRequest(List<ContentScoreUpdateRequest> requests) throws Exception {
         Client client = ClientBuilder.newClient();
         WebTarget webTarget = client
             .target(apiEndpoint)
             .path("score");
+
+        Map<ContentScoreUpdateRequest, String> failedRequests = Maps.newHashMap();
 
         for (ContentScoreUpdateRequest request : requests) {
             Response response = webTarget
                 .request()
                 .post(Entity.entity(request, MediaType.APPLICATION_JSON));
 
-            if (response.getStatus() >= 500) {
-                throw new Exception("Some internal exception");
+            if (response.getStatus() != 200) {
+                String errorMessage = response.readEntity(String.class);
+
+                if (response.getStatus() >= 500) {
+                    LOG.debug(
+                        "Internal server error when sending request for {}: {}",
+                        request.getUri(),
+                        errorMessage);
+                    failedRequests.put(request, errorMessage);
+                    continue;
+                }
+                if (response.getStatus() >= 400) {
+                    LOG.debug(
+                        "Client error when sending request for {}: {}",
+                        request.getUri(),
+                        errorMessage);
+                    failedRequests.put(request, errorMessage); //TODO: Should we retry client exceptions?
+                }
             }
-            if (response.getStatus() >= 400) {
-                throw new Exception("Some client exception");
-            }
+
         }
+
+        return failedRequests;
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
