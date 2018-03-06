@@ -75,7 +75,12 @@ public class UploadQueue implements Runnable {
         List<ContentScoreUpdateRequest> pendingBatches =
             Arrays.asList(queue.toArray(new ContentScoreUpdateRequest[queue.size()]));
 
-        pendingBatches.addAll(Arrays.asList(retryQueue.toArray(new ContentScoreUpdateRequest[retryQueue.size()])));
+        List<RetryElement> retryElements = Arrays.asList(retryQueue.toArray(new RetryElement[retryQueue.size()]));
+        retryElements
+            .stream()
+            .map(RetryElement::getBatch)
+            .forEach(pendingBatches::addAll);
+
         return pendingBatches;
     }
 
