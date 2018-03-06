@@ -2,6 +2,7 @@ package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.wcm.api.Page;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -29,36 +30,36 @@ import java.util.Map;
 public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService {
     private static final Logger LOG = LoggerFactory.getLogger(ContentScoreUpdateServiceImpl.class);
 
-    private static final String CONTENT_SCORE_UPDATED = "contentScoreLastUpdated";
+    static final String CONTENT_SCORE_UPDATED = "contentScoreLastUpdated";
 
     @Property(label = "API Endpoint", description = "The endpoint to which service requests can be submitted.")
-    private static final String API_ENDPOINT = "apiEndpoint";
+    static final String API_ENDPOINT = "apiEndpoint";
     private String apiEndpoint;
 
     private static final Long DEFAULT_MAX_SIZE = 4000000L;
     @Property(label = "Max Size", description = "Max size of the batch sent to the Content Scoring API.")
-    private static final String MAX_SIZE = "maxSize";
+    static final String MAX_SIZE = "maxSize";
 
     private static final Long DEFAULT_WAIT_TIME = 30000L;
     @Property(label = "Wait Time", description = "Time (in milliseconds) to wait between sending.")
-    private static final String WAIT_TIME = "waitTime";
+    static final String WAIT_TIME = "waitTime";
 
     private static final Integer DEFAULT_MAX_RETRIES = 3;
     @Property(label = "Max Retries", description = "Max number of retries for unsuccessful attempts.")
-    private static final String MAX_RETRIES = "maxRetries";
+    static final String MAX_RETRIES = "maxRetries";
 
     @Property(
         label = "Error Email Recipients",
         description = "When max number of retries is reached, an email will be sent. "
             + "Write recipients here separated by comma.")
-    private static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
+    static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
 
 
     @Reference
     private MessageGatewayService messageGatewayService;
 
-    private static UploadQueue internalQueueManager;
-    private static Thread queueManagerThread;
+    static UploadQueue internalQueueManager;
+    static Thread queueManagerThread;
 
     @Activate
     public void activate(final Map<String, Object> config) {
@@ -130,14 +131,16 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         setContentScoreUpdatedDate(page);
     }
 
-    private boolean hasNoScores(final ValueMap pageProperties) {
+    @VisibleForTesting
+    boolean hasNoScores(final ValueMap pageProperties) {
         return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) == null
             && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) == null
             && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) == null
             && pageProperties.get(ScoreType.GUIDE.getPropertyName()) == null;
     }
 
-    private void addScores(final ValueMap pageProperties, final Map<ScoreType, BigDecimal> contentScores) {
+    @VisibleForTesting
+    void addScores(final ValueMap pageProperties, final Map<ScoreType, BigDecimal> contentScores) {
         String zero = "0";
 
         String unawareString = (String) pageProperties.getOrDefault(ScoreType.UNAWARE.getPropertyName(), zero);
@@ -167,7 +170,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         LOG.debug("Page {} added to the queue", request.getContentId());
     }
 
-    private void setContentScoreUpdatedDate(final Page page) throws RepositoryException {
+    @VisibleForTesting
+    void setContentScoreUpdatedDate(final Page page) throws RepositoryException {
         Node node = page.getContentResource().adaptTo(Node.class);
         try {
             node.getSession().refresh(true);
