@@ -3,41 +3,41 @@ package org.cru.contentscoring.core.models;
 import java.math.BigDecimal;
 
 public class ContentScore {
-    private BigDecimal unaware;
-    private BigDecimal curious;
-    private BigDecimal follower;
-    private BigDecimal guide;
+    private int unaware;
+    private int curious;
+    private int follower;
+    private int guide;
     private BigDecimal confidence;
 
-    public BigDecimal getUnaware() {
+    public int getUnaware() {
         return unaware;
     }
 
-    public void setUnaware(final BigDecimal unaware) {
+    public void setUnaware(final int unaware) {
         this.unaware = unaware;
     }
 
-    public BigDecimal getCurious() {
+    public int getCurious() {
         return curious;
     }
 
-    public void setCurious(final BigDecimal curious) {
+    public void setCurious(final int curious) {
         this.curious = curious;
     }
 
-    public BigDecimal getFollower() {
+    public int getFollower() {
         return follower;
     }
 
-    public void setFollower(final BigDecimal follower) {
+    public void setFollower(final int follower) {
         this.follower = follower;
     }
 
-    public BigDecimal getGuide() {
+    public int getGuide() {
         return guide;
     }
 
-    public void setGuide(final BigDecimal guide) {
+    public void setGuide(final int guide) {
         this.guide = guide;
     }
 

@@ -15,7 +15,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -40,10 +39,10 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ContentScoreUpdateServiceImplTest {
-    private static final String UNAWARE_SCORE = "1.3";
+    private static final String UNAWARE_SCORE = "1";
     private static final String CURIOUS_SCORE = "2";
     private static final String FOLLOWER_SCORE = "5";
-    private static final String GUIDE_SCORE = "0.2";
+    private static final String GUIDE_SCORE = "3";
 
     @InjectMocks
     private ContentScoreUpdateServiceImpl updateService;
@@ -109,10 +108,10 @@ public class ContentScoreUpdateServiceImplTest {
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
-        assertThat(contentScore.getUnaware(), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
-        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(Integer.parseInt(UNAWARE_SCORE))));
+        assertThat(contentScore.getCurious(), is(equalTo(0)));
+        assertThat(contentScore.getFollower(), is(equalTo(0)));
+        assertThat(contentScore.getGuide(), is(equalTo(0)));
     }
 
     @Test
@@ -122,10 +121,10 @@ public class ContentScoreUpdateServiceImplTest {
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
-        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getCurious(), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
-        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(0)));
+        assertThat(contentScore.getCurious(), is(equalTo(Integer.parseInt(CURIOUS_SCORE))));
+        assertThat(contentScore.getFollower(), is(equalTo(0)));
+        assertThat(contentScore.getGuide(), is(equalTo(0)));
     }
 
     @Test
@@ -135,10 +134,10 @@ public class ContentScoreUpdateServiceImplTest {
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
-        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getFollower(), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
-        assertThat(contentScore.getGuide(), is(equalTo(BigDecimal.ZERO)));
+        assertThat(contentScore.getUnaware(), is(equalTo(0)));
+        assertThat(contentScore.getCurious(), is(equalTo(0)));
+        assertThat(contentScore.getFollower(), is(equalTo(Integer.parseInt(FOLLOWER_SCORE))));
+        assertThat(contentScore.getGuide(), is(equalTo(0)));
     }
 
     @Test
@@ -148,10 +147,10 @@ public class ContentScoreUpdateServiceImplTest {
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
-        assertThat(contentScore.getUnaware(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getCurious(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getFollower(), is(equalTo(BigDecimal.ZERO)));
-        assertThat(contentScore.getGuide(), is(equalTo(new BigDecimal(GUIDE_SCORE))));
+        assertThat(contentScore.getUnaware(), is(equalTo(0)));
+        assertThat(contentScore.getCurious(), is(equalTo(0)));
+        assertThat(contentScore.getFollower(), is(equalTo(0)));
+        assertThat(contentScore.getGuide(), is(equalTo(Integer.parseInt(GUIDE_SCORE))));
     }
 
     @Test
@@ -164,10 +163,10 @@ public class ContentScoreUpdateServiceImplTest {
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
-        assertThat(contentScore.getUnaware(), is(equalTo(new BigDecimal(UNAWARE_SCORE))));
-        assertThat(contentScore.getCurious(), is(equalTo(new BigDecimal(CURIOUS_SCORE))));
-        assertThat(contentScore.getFollower(), is(equalTo(new BigDecimal(FOLLOWER_SCORE))));
-        assertThat(contentScore.getGuide(), is(equalTo(new BigDecimal(GUIDE_SCORE))));
+        assertThat(contentScore.getUnaware(), is(equalTo(Integer.parseInt(UNAWARE_SCORE))));
+        assertThat(contentScore.getCurious(), is(equalTo(Integer.parseInt(CURIOUS_SCORE))));
+        assertThat(contentScore.getFollower(), is(equalTo(Integer.parseInt(FOLLOWER_SCORE))));
+        assertThat(contentScore.getGuide(), is(equalTo(Integer.parseInt(GUIDE_SCORE))));
     }
 
     @Test

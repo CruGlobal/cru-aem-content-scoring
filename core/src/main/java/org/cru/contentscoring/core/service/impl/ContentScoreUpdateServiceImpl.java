@@ -134,16 +134,16 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         ContentScore contentScore = new ContentScore();
 
         String unawareString = (String) pageProperties.getOrDefault(ScoreType.UNAWARE.getPropertyName(), zero);
-        contentScore.setUnaware(new BigDecimal(unawareString));
+        contentScore.setUnaware(Integer.parseInt(unawareString));
 
         String curiousString = (String) pageProperties.getOrDefault(ScoreType.CURIOUS.getPropertyName(), zero);
-        contentScore.setCurious(new BigDecimal(curiousString));
+        contentScore.setCurious(Integer.parseInt(curiousString));
 
         String followerString = (String) pageProperties.getOrDefault(ScoreType.FOLLOWER.getPropertyName(), zero);
-        contentScore.setFollower(new BigDecimal(followerString));
+        contentScore.setFollower(Integer.parseInt(followerString));
 
         String guideString = (String) pageProperties.getOrDefault(ScoreType.GUIDE.getPropertyName(), zero);
-        contentScore.setGuide(new BigDecimal(guideString));
+        contentScore.setGuide(Integer.parseInt(guideString));
 
         String scoreConfidence = (String) pageProperties.getOrDefault("scoreConfidence", zero);
         contentScore.setConfidence(new BigDecimal(scoreConfidence));
