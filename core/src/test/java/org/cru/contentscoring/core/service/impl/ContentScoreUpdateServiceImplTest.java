@@ -38,6 +38,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -249,6 +250,26 @@ public class ContentScoreUpdateServiceImplTest {
     }
 
     @Test
+    public void testSetContentScoreUpdateDateRetry() throws RepositoryException {
+        Page mockPage = mock(Page.class);
+        Resource mockResource = mock(Resource.class);
+        when(mockPage.getContentResource()).thenReturn(mockResource);
+
+        Node mockNode = mock(Node.class);
+        when(mockResource.adaptTo(Node.class)).thenReturn(mockNode);
+
+        Session mockSession = mock(Session.class);
+        doThrow(new RepositoryException()).when(mockSession).refresh(true);
+        when(mockNode.getSession()).thenReturn(mockSession);
+
+        updateService.setContentScoreUpdatedDate(mockPage);
+
+        verify(mockSession).refresh(false);
+        verify(mockNode).setProperty(eq(CONTENT_SCORE_UPDATED), any(Calendar.class));
+        verify(mockSession).save();
+    }
+
+    @Test
     public void testGetVanityUrl() {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
@@ -288,5 +309,25 @@ public class ContentScoreUpdateServiceImplTest {
         updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
 
         return page;
+    }
+
+    @Test
+    public void testGetExistingPublishConfiguration() {
+        updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
+
+        String path = "/content/foo/us/en/some-page";
+        String[] configuration = updateService.getPublishConfiguration(path);
+
+        assertThat(configuration, is(not(nullValue())));
+        assertThat(configuration[0], is(equalTo("/content/foo/us/en")));
+        assertThat(configuration[1], is(equalTo("foo-publish")));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testGetNonExistingPublishConfiguration() {
+        updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
+
+        String path = "/content/fail/us/en/some-page";
+        updateService.getPublishConfiguration(path);
     }
 }

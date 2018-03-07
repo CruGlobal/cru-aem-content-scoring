@@ -195,7 +195,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         return pageUrl;
     }
 
-    private String[] getPublishConfiguration(final String path) {
+    @VisibleForTesting
+    String[] getPublishConfiguration(final String path) {
         if (externalizersConfigs != null) {
             for (String key : externalizersConfigs.keySet()) {
                 if(path.contains(key)) {
