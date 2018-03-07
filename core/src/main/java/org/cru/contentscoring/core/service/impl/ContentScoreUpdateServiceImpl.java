@@ -1,15 +1,19 @@
 package org.cru.contentscoring.core.service.impl;
 
+import com.day.cq.commons.Externalizer;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.wcm.api.Page;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScore;
@@ -36,6 +40,13 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     @Property(label = "API Endpoint", description = "The endpoint to which service requests can be submitted.")
     static final String API_ENDPOINT = "apiEndpoint";
     private String apiEndpoint;
+
+    @Property(
+        label = "Externalizers",
+        description = "List of externalizers needed for content scoring",
+        cardinality = Integer.MAX_VALUE)
+    static final String EXTERNALIZERS = "externalizers";
+    Map<String, String> externalizersConfigs;
 
     private static final Long DEFAULT_MAX_SIZE = 4000000L;
     @Property(label = "Max Size", description = "Max size of the batch sent to the Content Scoring API.")
@@ -66,6 +77,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     public void activate(final Map<String, Object> config) {
         apiEndpoint = PropertiesUtil.toString(config.get(API_ENDPOINT), null);
         LOG.debug("configure: apiEndpoint='{}''", apiEndpoint);
+
+        externalizersConfigs = PropertiesUtil.toMap(config.get(EXTERNALIZERS), null);
 
         startQueueManager(config);
     }
@@ -109,10 +122,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             return;
         }
 
-        String pageId = page.getPath();
-
         ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
-        request.setUri(pageId);
+        request.setUri(getPageUrl(page));
         request.setScore(createScore(pageProperties));
 
         sendUpdateRequest(request);
@@ -157,6 +168,45 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             String.format("%s must be between 1 and 5, but is %d", scoreName, parsedScore));
 
         return parsedScore;
+    }
+
+    @VisibleForTesting
+    String getPageUrl(final Page page) {
+        String path = page.getVanityUrl();
+        boolean vanityUrl = !Strings.isNullOrEmpty(path);
+
+        if (!vanityUrl) {
+            path = page.getPath();
+        }
+
+        Resource resource = page.adaptTo(Resource.class);
+        ResourceResolver resolver = resource.getResourceResolver();
+        Externalizer externalizer = resolver.adaptTo(Externalizer.class);
+
+        String[] publishConfiguration = getPublishConfiguration(page.getPath());
+        String domain = publishConfiguration[1];
+        String pageUrl = externalizer.externalLink(resolver, domain, path);
+
+        if (vanityUrl) {
+            pageUrl = pageUrl.replace(publishConfiguration[0], "");
+        } else {
+            pageUrl += ".html";
+        }
+        return pageUrl;
+    }
+
+    private String[] getPublishConfiguration(final String path) {
+        if (externalizersConfigs != null) {
+            for (String key : externalizersConfigs.keySet()) {
+                if(path.contains(key)) {
+                    return new String[] {key, externalizersConfigs.get(key)};
+                }
+            }
+        }
+
+        IllegalStateException exception = new IllegalStateException("Externalizer not found for " + path);
+        LOG.error("Failed to find Externalizer", exception);
+        throw exception;
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
