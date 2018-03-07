@@ -4,6 +4,7 @@ import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -122,7 +123,8 @@ public class UploadQueue implements Runnable {
         }
     }
 
-    private void updateContentScoreRequest(List<ContentScoreUpdateRequest> requests) {
+    @VisibleForTesting
+    void updateContentScoreRequest(List<ContentScoreUpdateRequest> requests) {
         try {
             Map<ContentScoreUpdateRequest, String> failedRequests = sendRequestBatch(requests);
 
@@ -134,13 +136,15 @@ public class UploadQueue implements Runnable {
         }
     }
 
-    private void handleFailedFirstAttempt(List<ContentScoreUpdateRequest> failedRequests) {
+    @VisibleForTesting
+    void handleFailedFirstAttempt(List<ContentScoreUpdateRequest> failedRequests) {
         RetryElement retryElement = new RetryElement(failedRequests, 1);
         retryQueue.add(retryElement);
         LOG.warn("RetryElement Added {}", retryElement.toString());
     }
 
-    private void updateContentScoreRequest(RetryElement retryElement) throws EmailException, AddressException {
+    @VisibleForTesting
+    void updateContentScoreRequest(RetryElement retryElement) throws EmailException, AddressException {
         try {
             Map<ContentScoreUpdateRequest, String> failedRequests = sendRequestBatch(retryElement.getBatch());
 
@@ -158,7 +162,8 @@ public class UploadQueue implements Runnable {
         }
     }
 
-    private void handleFailedRetry(RetryElement retryElement, String errorMessage) throws EmailException, AddressException {
+    @VisibleForTesting
+    void handleFailedRetry(RetryElement retryElement, String errorMessage) throws EmailException, AddressException {
         if (maxRetries >= retryElement.incrementRetries()) {
             retryQueue.add(retryElement);
             LOG.warn("RetryElement Added {}", retryElement.toString());
@@ -173,7 +178,8 @@ public class UploadQueue implements Runnable {
         }
     }
 
-    private void sendEmail(String error) throws EmailException, AddressException {
+    @VisibleForTesting
+    void sendEmail(String error) throws EmailException, AddressException {
         MessageGateway<HtmlEmail> messageGateway = messageGatewayService.getGateway(HtmlEmail.class);
 
         List<InternetAddress> emailRecipients = Lists.newArrayList();
@@ -188,13 +194,15 @@ public class UploadQueue implements Runnable {
         messageGateway.send((HtmlEmail) email);
     }
 
-    private String buildEmailBody(String error) {
+    @VisibleForTesting
+    String buildEmailBody(String error) {
         return "<h1>An error was found when updating the content score in AEM</h1>"
             + "<p></p><p></p>"
             + "<p>" + error.replace("\n", "</p><p>") + "</p>";
     }
 
-    private Map<ContentScoreUpdateRequest, String> sendRequestBatch(List<ContentScoreUpdateRequest> requests) throws Exception {
+    @VisibleForTesting
+    Map<ContentScoreUpdateRequest, String> sendRequestBatch(List<ContentScoreUpdateRequest> requests) throws Exception {
         Client client = ClientBuilder.newClient();
         WebTarget webTarget = client
             .target(apiEndpoint)
@@ -209,7 +217,8 @@ public class UploadQueue implements Runnable {
         return failedRequests;
     }
 
-    private void sendRequest(
+    @VisibleForTesting
+    void sendRequest(
         WebTarget webTarget,
         ContentScoreUpdateRequest request,
         Map<ContentScoreUpdateRequest, String> failedRequests) {
