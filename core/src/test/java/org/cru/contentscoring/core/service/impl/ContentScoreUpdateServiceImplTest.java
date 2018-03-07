@@ -102,6 +102,14 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(updateService.hasNoScores(pageProperties), is(false));
     }
 
+    @Test
+    public void testPageHasConfidence() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
+
+        assertThat(updateService.hasNoScores(pageProperties), is(false));
+    }
+
     @Test(expected = NullPointerException.class)
     public void testCreateScoreMissingUnaware() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());

@@ -124,7 +124,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) == null
             && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) == null
             && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) == null
-            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) == null;
+            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) == null
+            && pageProperties.get(ScoreType.CONFIDENCE.getPropertyName()) == null;
     }
 
     @VisibleForTesting
