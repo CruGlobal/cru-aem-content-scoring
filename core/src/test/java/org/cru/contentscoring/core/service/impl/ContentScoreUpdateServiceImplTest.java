@@ -186,6 +186,18 @@ public class ContentScoreUpdateServiceImplTest {
         updateService.createScore(pageProperties);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidConfidence() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
+        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
+        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put("scoreConfidence", "1.01");
+
+        updateService.createScore(pageProperties);
+    }
+
     @Test
     public void testSetContentScoreUpdatedDate() throws RepositoryException {
         Page mockPage = mock(Page.class);
