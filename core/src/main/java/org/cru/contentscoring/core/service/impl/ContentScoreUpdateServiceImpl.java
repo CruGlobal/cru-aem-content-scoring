@@ -136,12 +136,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         contentScore.setFollower(getScore(pageProperties, ScoreType.FOLLOWER.getPropertyName()));
         contentScore.setGuide(getScore(pageProperties, ScoreType.GUIDE.getPropertyName()));
 
-        String scoreConfidence = pageProperties.get("scoreConfidence", String.class);
-        Preconditions.checkNotNull(scoreConfidence, "scoreConfidence is required");
+        String scoreConfidence = pageProperties.get(ScoreType.CONFIDENCE.getPropertyName(), String.class);
+        Preconditions.checkNotNull(scoreConfidence, ScoreType.CONFIDENCE.getPropertyName() + " is required");
         BigDecimal parsedConfidence = new BigDecimal(scoreConfidence);
         Preconditions.checkArgument(
             parsedConfidence.compareTo(BigDecimal.ONE) <= 0 && parsedConfidence.compareTo(BigDecimal.ZERO) >= 0,
-            String.format("scoreConfidence must be between 0 and 1, but is %s", scoreConfidence));
+            String.format("%s must be between 0 and 1, but is %s", ScoreType.CONFIDENCE.getPropertyName(), scoreConfidence));
         contentScore.setConfidence(new BigDecimal(scoreConfidence));
 
         return contentScore;

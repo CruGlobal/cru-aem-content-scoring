@@ -108,7 +108,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put("scoreConfidence", "1");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
 
         updateService.createScore(pageProperties);
     }
@@ -119,7 +119,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put("scoreConfidence", "0.75");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.75");
 
         updateService.createScore(pageProperties);
     }
@@ -130,7 +130,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put("scoreConfidence", "0.51");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.51");
 
         updateService.createScore(pageProperties);
     }
@@ -141,7 +141,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
-        pageProperties.put("scoreConfidence", "0.99");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.99");
 
         updateService.createScore(pageProperties);
     }
@@ -164,7 +164,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put("scoreConfidence", "0.01");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.01");
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
@@ -193,7 +193,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put("scoreConfidence", "1.01");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1.01");
 
         updateService.createScore(pageProperties);
     }

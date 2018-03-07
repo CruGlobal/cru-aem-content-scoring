@@ -4,7 +4,8 @@ public enum ScoreType {
     UNAWARE("scoreUnaware"),
     CURIOUS("scoreCurious"),
     FOLLOWER("scoreFollower"),
-    GUIDE("scoreGuide");
+    GUIDE("scoreGuide"),
+    CONFIDENCE("scoreConfidence");
 
     private String propertyName;
 
