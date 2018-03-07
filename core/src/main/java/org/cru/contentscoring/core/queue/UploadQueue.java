@@ -27,7 +27,6 @@ import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,7 +43,7 @@ public class UploadQueue implements Runnable {
     private MessageGatewayService messageGatewayService;
 
     private ConcurrentLinkedQueue<ContentScoreUpdateRequest> queue;
-    private ArrayDeque<RetryElement> retryQueue;
+    ArrayDeque<RetryElement> retryQueue;
 
     public UploadQueue(
         long maxSize,
@@ -73,9 +72,9 @@ public class UploadQueue implements Runnable {
 
     public List<ContentScoreUpdateRequest> getPendingBatches() {
         List<ContentScoreUpdateRequest> pendingBatches =
-            Arrays.asList(queue.toArray(new ContentScoreUpdateRequest[queue.size()]));
+            Lists.newArrayList(queue.toArray(new ContentScoreUpdateRequest[queue.size()]));
 
-        List<RetryElement> retryElements = Arrays.asList(retryQueue.toArray(new RetryElement[retryQueue.size()]));
+        List<RetryElement> retryElements = Lists.newArrayList(retryQueue.toArray(new RetryElement[retryQueue.size()]));
         retryElements
             .stream()
             .map(RetryElement::getBatch)
