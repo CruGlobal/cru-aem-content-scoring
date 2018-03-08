@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.queue;
 import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -24,7 +23,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -35,7 +33,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class UploadQueue implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(UploadQueue.class);
 
-    private long maxSize;
     private long waitTime;
     private int maxRetries;
     private boolean stop;
@@ -47,7 +44,6 @@ public class UploadQueue implements Runnable {
     ArrayDeque<RetryElement> retryQueue;
 
     public UploadQueue(
-        long maxSize,
         long waitTime,
         int maxRetries,
         String apiEndpoint,
@@ -55,7 +51,6 @@ public class UploadQueue implements Runnable {
         MessageGatewayService messageGatewayService,
         List<ContentScoreUpdateRequest> pendingBatches) {
 
-        this.maxSize = maxSize;
         this.waitTime = waitTime;
         this.maxRetries = maxRetries;
         this.apiEndpoint = apiEndpoint;
@@ -249,41 +244,13 @@ public class UploadQueue implements Runnable {
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-
         List<ContentScoreUpdateRequest> requests = Lists.newArrayList();
-        List<ContentScoreUpdateRequest> currentRequests = Lists.newArrayList();
-
         ContentScoreUpdateRequest nextRequest = queue.poll();
-        currentRequests.add(nextRequest);
 
-        while (nextRequest != null && getLength(objectMapper.writeValueAsString(currentRequests)) < maxSize) {
+        while (nextRequest != null) {
             requests.add(nextRequest);
             nextRequest = queue.poll();
-            currentRequests.add(nextRequest);
-        }
-
-        if (requests.isEmpty() && nextRequest != null) {
-            throw new RuntimeException(
-                String.format(
-                    "Batch size bigger than batch Max Size allowed. (MaxSize=%d) (ElementSize= %d) Element=%s",
-                    maxSize,
-                    getLength(objectMapper.writeValueAsString(currentRequests)),
-                    objectMapper.writeValueAsString(nextRequest)));
-        } else if (nextRequest != null) {
-            put(nextRequest);
         }
         return requests;
-    }
-
-    private long getLength(String requestBody) {
-        long contentLength = requestBody.length();
-        try {
-            byte[] bytes = requestBody.getBytes("UTF-8");
-            contentLength = bytes.length;
-        } catch (UnsupportedEncodingException e) {
-            LOG.error("UnsupportedEncodingException: ", e);
-        }
-        return contentLength;
     }
 }

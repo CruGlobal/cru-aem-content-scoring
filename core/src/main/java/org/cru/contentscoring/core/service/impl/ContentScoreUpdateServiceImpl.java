@@ -48,10 +48,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     static final String EXTERNALIZERS = "externalizers";
     Map<String, String> externalizersConfigs;
 
-    private static final Long DEFAULT_MAX_SIZE = 4000000L;
-    @Property(label = "Max Size", description = "Max size of the batch sent to the Content Scoring API.")
-    static final String MAX_SIZE = "maxSize";
-
     private static final Long DEFAULT_WAIT_TIME = 30L * 1000L;
     @Property(label = "Wait Time", description = "Time (in milliseconds) to wait between sending.")
     static final String WAIT_TIME = "waitTime";
@@ -84,14 +80,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     private void startQueueManager(final Map<String, Object> config) {
-        long maxSize = PropertiesUtil.toLong(config.get(MAX_SIZE), DEFAULT_MAX_SIZE);
         long waitTime = PropertiesUtil.toLong(config.get(WAIT_TIME), DEFAULT_WAIT_TIME);
         int maxRetries = PropertiesUtil.toInteger(config.get(MAX_RETRIES), DEFAULT_MAX_RETRIES);
         String errorEmailRecipients = PropertiesUtil.toString(config.get(ERROR_EMAIL_RECIPIENTS), "");
 
         if (internalQueueManager == null) {
             internalQueueManager = new UploadQueue(
-                maxSize,
                 waitTime,
                 maxRetries,
                 apiEndpoint,
@@ -100,7 +94,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
                 null);
         } else {
             internalQueueManager = new UploadQueue(
-                maxSize,
                 waitTime,
                 maxRetries,
                 apiEndpoint,

@@ -28,7 +28,6 @@ import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateService
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.ERROR_EMAIL_RECIPIENTS;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.EXTERNALIZERS;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.MAX_RETRIES;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.MAX_SIZE;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.WAIT_TIME;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.Is.is;
@@ -60,7 +59,6 @@ public class ContentScoreUpdateServiceImplTest {
     public void testActivation() {
         Map<String, Object> config = Maps.newHashMap();
         config.put(API_ENDPOINT, "http://somewhere-out.there.com");
-        config.put(MAX_SIZE, 6000000L);
         config.put(WAIT_TIME, 10000L);
         config.put(MAX_RETRIES, 5);
         config.put(ERROR_EMAIL_RECIPIENTS, "some.email@example.com,another.email@example.com");

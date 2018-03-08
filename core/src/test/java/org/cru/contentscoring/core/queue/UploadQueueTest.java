@@ -43,7 +43,6 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.class)
 public class UploadQueueTest {
-    private static final long MAX_SIZE = 4000000L;
     private static final long WAIT_TIME = 30L * 1000L;
     private static final int MAX_RETRIES = 3;
     private static final String API_ENDPOINT = "http://somewhere-out.there.com";
@@ -61,7 +60,6 @@ public class UploadQueueTest {
     @Before
     public void setup() {
         uploadQueue = new UploadQueue(
-            MAX_SIZE,
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
@@ -87,7 +85,6 @@ public class UploadQueueTest {
         List<ContentScoreUpdateRequest> pendingBatches = Lists.newArrayList(request);
 
         uploadQueue = new UploadQueue(
-            MAX_SIZE,
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
@@ -113,7 +110,6 @@ public class UploadQueueTest {
         RetryElement retryElement = new RetryElement(Lists.newArrayList(retryRequest), 1);
 
         uploadQueue = new UploadQueue(
-            MAX_SIZE,
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
