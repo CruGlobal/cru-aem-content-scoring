@@ -3,6 +3,7 @@ package org.cru.contentscoring.core.queue;
 import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
@@ -216,11 +217,14 @@ public class UploadQueue implements Runnable {
     void sendRequest(
         WebTarget webTarget,
         ContentScoreUpdateRequest request,
-        Map<ContentScoreUpdateRequest, String> failedRequests) {
+        Map<ContentScoreUpdateRequest, String> failedRequests) throws JsonProcessingException {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonRequest = objectMapper.writeValueAsString(request);
 
         Response response = webTarget
             .request()
-            .post(Entity.entity(request, MediaType.APPLICATION_JSON));
+            .post(Entity.entity(jsonRequest, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != 200) {
             String errorMessage = response.readEntity(String.class);

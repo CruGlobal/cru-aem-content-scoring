@@ -2,6 +2,8 @@ package org.cru.contentscoring.core.queue;
 
 import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.mail.EmailException;
@@ -140,7 +142,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testSuccessfulSendRequest() {
+    public void testSuccessfulSendRequest() throws JsonProcessingException {
         Response successfulResponse = mock(Response.class);
         when(successfulResponse.getStatus()).thenReturn(200);
 
@@ -154,7 +156,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testInternalErrorSendRequest() {
+    public void testInternalErrorSendRequest() throws JsonProcessingException {
         String errorMessage = "We Failed";
         WebTarget webTarget = mockErrorWebTarget(errorMessage, 500);
 
@@ -167,7 +169,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testClientErrorSendRequest() {
+    public void testClientErrorSendRequest() throws JsonProcessingException {
         String errorMessage = "You Failed";
         WebTarget webTarget = mockErrorWebTarget(errorMessage, 400);
 
@@ -179,7 +181,7 @@ public class UploadQueueTest {
         assertThat(failedRequests.get(request), is(equalTo(errorMessage)));
     }
 
-    private WebTarget mockErrorWebTarget(final String errorMessage, final int statusCode) {
+    private WebTarget mockErrorWebTarget(final String errorMessage, final int statusCode) throws JsonProcessingException {
         Response errorResponse = mock(Response.class);
         when(errorResponse.getStatus()).thenReturn(statusCode);
         when(errorResponse.readEntity(String.class)).thenReturn(errorMessage);
@@ -187,9 +189,11 @@ public class UploadQueueTest {
         return mockWebTarget(errorResponse);
     }
 
-    private WebTarget mockWebTarget(final Response response) {
+    private WebTarget mockWebTarget(final Response response) throws JsonProcessingException {
         Invocation.Builder builder = mock(Invocation.Builder.class);
-        when(builder.post(Entity.entity(request, MediaType.APPLICATION_JSON))).thenReturn(response);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(request);
+        when(builder.post(Entity.entity(json, MediaType.APPLICATION_JSON))).thenReturn(response);
 
         WebTarget webTarget = mock(WebTarget.class);
         when(webTarget.request()).thenReturn(builder);
