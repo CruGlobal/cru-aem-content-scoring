@@ -39,14 +39,15 @@ public class IndexerJobConsumer implements JobConsumer {
             PageManager pageManager = resourceResolver.adaptTo(PageManager.class);
             Page page = pageManager.getPage(action.getPath());
 
-            LOG.debug("ReplicationActionType: " + action.getType());
+            if (page != null) {
+                LOG.debug("ReplicationActionType: " + action.getType());
 
-            if (ReplicationActionType.ACTIVATE.equals(action.getType())
-                    || ReplicationActionType.INTERNAL_POLL.equals(action.getType())) {
+                if (ReplicationActionType.ACTIVATE.equals(action.getType())
+                        || ReplicationActionType.INTERNAL_POLL.equals(action.getType()))
+                {
 
-                LOG.debug("{} path={} ", action.getType(), action.getPath());
+                    LOG.debug("{} path={} ", action.getType(), action.getPath());
 
-                if (page != null) {
                     service.updateContentScore(page);
                     session.save();
                 }
