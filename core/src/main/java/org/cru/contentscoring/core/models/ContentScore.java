@@ -1,13 +1,11 @@
 package org.cru.contentscoring.core.models;
 
-import java.math.BigDecimal;
-
 public class ContentScore {
     private int unaware;
     private int curious;
     private int follower;
     private int guide;
-    private BigDecimal confidence;
+    private int confidence;
 
     public int getUnaware() {
         return unaware;
@@ -41,11 +39,11 @@ public class ContentScore {
         this.guide = guide;
     }
 
-    public BigDecimal getConfidence() {
+    public int getConfidence() {
         return confidence;
     }
 
-    public void setConfidence(final BigDecimal confidence) {
+    public void setConfidence(final int confidence) {
         this.confidence = confidence;
     }
 }

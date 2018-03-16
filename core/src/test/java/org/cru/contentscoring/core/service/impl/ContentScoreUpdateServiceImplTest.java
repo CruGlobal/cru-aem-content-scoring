@@ -18,7 +18,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +90,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "100");
 
         assertThat(updateService.hasAllScores(pageProperties), is(true));
     }
@@ -110,7 +109,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "100");
 
         assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
@@ -121,7 +120,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.75");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "75");
 
         assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
@@ -132,7 +131,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.51");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "51");
 
         assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
@@ -143,7 +142,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.99");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "99");
 
         assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
@@ -166,7 +165,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.01");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
 
         ContentScore contentScore = updateService.createScore(pageProperties);
 
@@ -174,7 +173,7 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(contentScore.getCurious(), is(equalTo(Integer.parseInt(CURIOUS_SCORE))));
         assertThat(contentScore.getFollower(), is(equalTo(Integer.parseInt(FOLLOWER_SCORE))));
         assertThat(contentScore.getGuide(), is(equalTo(Integer.parseInt(GUIDE_SCORE))));
-        assertThat(contentScore.getConfidence(), is(equalTo(new BigDecimal("0.01"))));
+        assertThat(contentScore.getConfidence(), is(equalTo(1)));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -195,7 +194,7 @@ public class ContentScoreUpdateServiceImplTest {
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1.01");
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "101");
 
         updateService.createScore(pageProperties);
     }

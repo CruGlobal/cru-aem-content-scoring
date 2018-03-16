@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Map;
 
@@ -143,11 +142,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         String scoreConfidence = pageProperties.get(ScoreType.CONFIDENCE.getPropertyName(), String.class);
         Preconditions.checkNotNull(scoreConfidence, ScoreType.CONFIDENCE.getPropertyName() + " is required");
-        BigDecimal parsedConfidence = new BigDecimal(scoreConfidence);
+        int parsedConfidence = Integer.parseInt(scoreConfidence);
         Preconditions.checkArgument(
-            parsedConfidence.compareTo(BigDecimal.ONE) <= 0 && parsedConfidence.compareTo(BigDecimal.ZERO) >= 0,
-            String.format("%s must be between 0 and 1, but is %s", ScoreType.CONFIDENCE.getPropertyName(), scoreConfidence));
-        contentScore.setConfidence(new BigDecimal(scoreConfidence));
+            parsedConfidence >= 0 && parsedConfidence <= 100,
+            String.format("%s must be between 1 and 100, but is %s", ScoreType.CONFIDENCE.getPropertyName(), scoreConfidence));
+        contentScore.setConfidence(parsedConfidence);
 
         return contentScore;
     }
