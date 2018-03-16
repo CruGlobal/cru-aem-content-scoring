@@ -23,6 +23,7 @@ import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -141,7 +142,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testSuccessfulSendRequest() throws JsonProcessingException {
+    public void testSuccessfulSendRequest() throws IOException {
         Response successfulResponse = mock(Response.class);
         when(successfulResponse.getStatus()).thenReturn(200);
 
@@ -155,7 +156,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testInternalErrorSendRequest() throws JsonProcessingException {
+    public void testInternalErrorSendRequest() throws IOException {
         String errorMessage = "We Failed";
         WebTarget webTarget = mockErrorWebTarget(errorMessage, 500);
 
@@ -168,7 +169,7 @@ public class UploadQueueTest {
     }
 
     @Test
-    public void testClientErrorSendRequest() throws JsonProcessingException {
+    public void testClientErrorSendRequest() throws IOException {
         String errorMessage = "You Failed";
         WebTarget webTarget = mockErrorWebTarget(errorMessage, 400);
 
@@ -183,7 +184,7 @@ public class UploadQueueTest {
     private WebTarget mockErrorWebTarget(final String errorMessage, final int statusCode) throws JsonProcessingException {
         Response errorResponse = mock(Response.class);
         when(errorResponse.getStatus()).thenReturn(statusCode);
-        when(errorResponse.readEntity(String.class)).thenReturn(errorMessage);
+        when(errorResponse.readEntity(String.class)).thenReturn("{ \"message\": \"" + errorMessage + "\" }");
 
         return mockWebTarget(errorResponse);
     }

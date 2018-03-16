@@ -2,6 +2,7 @@ package org.cru.contentscoring.core.queue;
 
 import com.day.cq.mailer.MessageGateway;
 import com.day.cq.mailer.MessageGatewayService;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -12,6 +13,7 @@ import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
+import org.cru.contentscoring.core.models.ErrorResponse;
 import org.cru.contentscoring.core.models.RetryElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -217,7 +220,7 @@ public class UploadQueue implements Runnable {
     void sendRequest(
         WebTarget webTarget,
         ContentScoreUpdateRequest request,
-        Map<ContentScoreUpdateRequest, String> failedRequests) throws JsonProcessingException {
+        Map<ContentScoreUpdateRequest, String> failedRequests) throws IOException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonRequest = objectMapper.writeValueAsString(request);
@@ -227,7 +230,8 @@ public class UploadQueue implements Runnable {
             .post(Entity.entity(jsonRequest, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != 200) {
-            String errorMessage = response.readEntity(String.class);
+            String jsonResponse = response.readEntity(String.class);
+            String errorMessage = parseErrorMessage(jsonResponse, objectMapper);
 
             if (response.getStatus() >= 500) {
                 LOG.debug(
@@ -245,6 +249,12 @@ public class UploadQueue implements Runnable {
                 failedRequests.put(request, errorMessage); //TODO: Should we retry client exceptions?
             }
         }
+    }
+
+    private String parseErrorMessage(final String jsonResponse, final ObjectMapper objectMapper) throws IOException {
+        JsonParser jsonParser = objectMapper.getFactory().createParser(jsonResponse);
+        ErrorResponse errorResponse = jsonParser.readValueAs(ErrorResponse.class);
+        return errorResponse.getMessage();
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
