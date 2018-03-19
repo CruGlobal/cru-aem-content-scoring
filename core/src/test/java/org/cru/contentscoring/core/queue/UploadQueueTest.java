@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -48,6 +49,7 @@ public class UploadQueueTest {
     private static final long WAIT_TIME = 30L * 1000L;
     private static final int MAX_RETRIES = 3;
     private static final String API_ENDPOINT = "http://somewhere-out.there.com";
+    private static final UUID API_KEY = UUID.randomUUID();
     private static final String ERROR_EMAIL_RECIPIENTS = "test.email@here.com";
 
     @Mock
@@ -65,6 +67,7 @@ public class UploadQueueTest {
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
+            API_KEY,
             ERROR_EMAIL_RECIPIENTS,
             messageGatewayService,
             null);
@@ -90,6 +93,7 @@ public class UploadQueueTest {
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
+            API_KEY,
             ERROR_EMAIL_RECIPIENTS,
             messageGatewayService,
             pendingBatches);
@@ -115,6 +119,7 @@ public class UploadQueueTest {
             WAIT_TIME,
             MAX_RETRIES,
             API_ENDPOINT,
+            API_KEY,
             ERROR_EMAIL_RECIPIENTS,
             messageGatewayService,
             queue);
@@ -193,6 +198,7 @@ public class UploadQueueTest {
         Invocation.Builder builder = mock(Invocation.Builder.class);
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(request);
+        when(builder.header("X-Api-Key", API_KEY)).thenReturn(builder);
         when(builder.post(Entity.entity(json, MediaType.APPLICATION_JSON))).thenReturn(response);
 
         WebTarget webTarget = mock(WebTarget.class);

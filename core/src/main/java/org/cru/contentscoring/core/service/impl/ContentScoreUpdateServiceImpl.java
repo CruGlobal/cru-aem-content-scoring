@@ -28,6 +28,7 @@ import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Service(ContentScoreUpdateService.class)
@@ -61,6 +62,9 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             + "Write recipients here separated by comma.")
     static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
 
+    private static final String API_KEY_LOCATION = "AEM_CONTENT_SCORING_API_KEY";
+    private UUID apiKey;
+
 
     @Reference
     private MessageGatewayService messageGatewayService;
@@ -72,6 +76,10 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     public void activate(final Map<String, Object> config) {
         apiEndpoint = PropertiesUtil.toString(config.get(API_ENDPOINT), null);
         LOG.debug("configure: apiEndpoint='{}''", apiEndpoint);
+
+        String apiKeyString = System.getenv(API_KEY_LOCATION);
+        Preconditions.checkNotNull(apiKeyString, "API Key is null!");
+        apiKey = UUID.fromString(apiKeyString);
 
         externalizersConfigs = PropertiesUtil.toMap(config.get(EXTERNALIZERS), null);
 
@@ -88,6 +96,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
                 waitTime,
                 maxRetries,
                 apiEndpoint,
+                apiKey,
                 errorEmailRecipients,
                 messageGatewayService,
                 null);
@@ -96,6 +105,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
                 waitTime,
                 maxRetries,
                 apiEndpoint,
+                apiKey,
                 errorEmailRecipients,
                 messageGatewayService,
                 internalQueueManager.getPendingBatches());

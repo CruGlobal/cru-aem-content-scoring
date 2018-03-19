@@ -32,6 +32,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UploadQueue implements Runnable {
@@ -41,6 +42,7 @@ public class UploadQueue implements Runnable {
     private int maxRetries;
     private boolean stop;
     private String apiEndpoint;
+    private final UUID apiKey;
     private String errorEmailRecipients;
     private MessageGatewayService messageGatewayService;
 
@@ -51,6 +53,7 @@ public class UploadQueue implements Runnable {
         long waitTime,
         int maxRetries,
         String apiEndpoint,
+        UUID apiKey,
         String errorEmailRecipients,
         MessageGatewayService messageGatewayService,
         List<ContentScoreUpdateRequest> pendingBatches) {
@@ -58,6 +61,7 @@ public class UploadQueue implements Runnable {
         this.waitTime = waitTime;
         this.maxRetries = maxRetries;
         this.apiEndpoint = apiEndpoint;
+        this.apiKey = apiKey;
         this.errorEmailRecipients = errorEmailRecipients;
         this.messageGatewayService = messageGatewayService;
 
@@ -227,6 +231,7 @@ public class UploadQueue implements Runnable {
 
         Response response = webTarget
             .request()
+            .header("X-Api-Key", apiKey)
             .post(Entity.entity(jsonRequest, MediaType.APPLICATION_JSON));
 
         if (response.getStatus() != 200) {
