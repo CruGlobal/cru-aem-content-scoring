@@ -85,106 +85,78 @@ public class ContentScoreUpdateServiceImplTest {
     }
 
     @Test
-    public void testPageHasNoScores() {
+    public void testPageHasAllScores() {
+        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
+        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
+        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
+        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
+        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
+        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
+
+        assertThat(updateService.hasAllScores(pageProperties), is(true));
+    }
+
+    @Test
+    public void testPageMissingAllScores() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put("someProperty", "someValue");
 
-        assertThat(updateService.hasNoScores(pageProperties), is(true));
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
     @Test
-    public void testPageHasUnawareScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
-
-        assertThat(updateService.hasNoScores(pageProperties), is(false));
-    }
-
-    @Test
-    public void testPageHasCuriousScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
-
-        assertThat(updateService.hasNoScores(pageProperties), is(false));
-    }
-
-    @Test
-    public void testPageHasFollowerScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
-
-        assertThat(updateService.hasNoScores(pageProperties), is(false));
-    }
-
-    @Test
-    public void testPageHasGuideScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
-
-        assertThat(updateService.hasNoScores(pageProperties), is(false));
-    }
-
-    @Test
-    public void testPageHasConfidence() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
-
-        assertThat(updateService.hasNoScores(pageProperties), is(false));
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void testCreateScoreMissingUnaware() {
+    public void testPageMissingUnawareScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
         pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "1");
 
-        updateService.createScore(pageProperties);
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testCreateScoreMissingCurious() {
+    @Test
+    public void testPageMissingCuriousScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
         pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.75");
 
-        updateService.createScore(pageProperties);
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testCreateScoreMissingFollower() {
+    @Test
+    public void testPageMissingFollowerScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
         pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.51");
 
-        updateService.createScore(pageProperties);
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testCreateScoreMissingGuide() {
+    @Test
+    public void testPageMissingGuideScore() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.CONFIDENCE.getPropertyName(), "0.99");
 
-        updateService.createScore(pageProperties);
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
-    @Test(expected = NullPointerException.class)
-    public void testCreateScoreMissingConfidence() {
+    @Test
+    public void testPageMissingConfidence() {
         ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
         pageProperties.put(ScoreType.UNAWARE.getPropertyName(), UNAWARE_SCORE);
         pageProperties.put(ScoreType.CURIOUS.getPropertyName(), CURIOUS_SCORE);
         pageProperties.put(ScoreType.FOLLOWER.getPropertyName(), FOLLOWER_SCORE);
         pageProperties.put(ScoreType.GUIDE.getPropertyName(), GUIDE_SCORE);
 
-        updateService.createScore(pageProperties);
+        assertThat(updateService.hasAllScores(pageProperties), is(false));
     }
 
     @Test

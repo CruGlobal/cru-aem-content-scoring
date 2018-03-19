@@ -110,8 +110,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     public void updateContentScore(final Page page) throws RepositoryException {
         ValueMap pageProperties = page.getProperties();
 
-        if (hasNoScores(pageProperties)) {
-            // Nothing to update
+        if (!hasAllScores(pageProperties)) {
+            // All scores are required for update
             return;
         }
 
@@ -124,12 +124,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    boolean hasNoScores(final ValueMap pageProperties) {
-        return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) == null
-            && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) == null
-            && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) == null
-            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) == null
-            && pageProperties.get(ScoreType.CONFIDENCE.getPropertyName()) == null;
+    boolean hasAllScores(final ValueMap pageProperties) {
+        return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) != null
+            && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) != null
+            && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) != null
+            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) != null
+            && pageProperties.get(ScoreType.CONFIDENCE.getPropertyName()) != null;
     }
 
     @VisibleForTesting
