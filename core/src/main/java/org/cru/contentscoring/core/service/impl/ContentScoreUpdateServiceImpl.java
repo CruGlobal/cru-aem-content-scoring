@@ -48,7 +48,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     static final String EXTERNALIZERS = "externalizers";
     Map<String, String> externalizersConfigs;
 
-    private static final Long DEFAULT_WAIT_TIME = 30L * 1000L;
+    private static final Long DEFAULT_WAIT_TIME = 5L * 1000L;
     @Property(label = "Wait Time", description = "Time (in milliseconds) to wait between sending.")
     static final String WAIT_TIME = "waitTime";
 
