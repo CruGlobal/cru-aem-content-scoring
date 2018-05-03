@@ -151,7 +151,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         contentScore.setGuide(getScore(pageProperties, ScoreType.GUIDE.getPropertyName()));
 
         String scoreConfidence = pageProperties.get(ScoreType.CONFIDENCE.getPropertyName(), String.class);
-        Preconditions.checkNotNull(scoreConfidence, ScoreType.CONFIDENCE.getPropertyName() + " is required");
         int parsedConfidence = Integer.parseInt(scoreConfidence);
         Preconditions.checkArgument(
             parsedConfidence >= 0 && parsedConfidence <= 100,
