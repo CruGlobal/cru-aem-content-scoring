@@ -165,8 +165,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         Preconditions.checkNotNull(score, scoreName + " is required");
         int parsedScore = Integer.parseInt(score);
         Preconditions.checkArgument(
-            parsedScore >= 1 && parsedScore <= 5,
-            String.format("%s must be between 1 and 5, but is %d", scoreName, parsedScore));
+            parsedScore >= 1 && parsedScore <= 6,
+            String.format("%s must be between 1 and 6, but is %d", scoreName, parsedScore));
 
         return parsedScore;
     }
