@@ -151,7 +151,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         contentScore.setGuide(getScore(pageProperties, ScoreType.GUIDE.getPropertyName()));
 
         String scoreConfidence = pageProperties.get(ScoreType.CONFIDENCE.getPropertyName(), String.class);
-        Preconditions.checkNotNull(scoreConfidence, ScoreType.CONFIDENCE.getPropertyName() + " is required");
         int parsedConfidence = Integer.parseInt(scoreConfidence);
         Preconditions.checkArgument(
             parsedConfidence >= 0 && parsedConfidence <= 100,
@@ -166,8 +165,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         Preconditions.checkNotNull(score, scoreName + " is required");
         int parsedScore = Integer.parseInt(score);
         Preconditions.checkArgument(
-            parsedScore >= 1 && parsedScore <= 5,
-            String.format("%s must be between 1 and 5, but is %d", scoreName, parsedScore));
+            parsedScore >= 1 && parsedScore <= 6,
+            String.format("%s must be between 1 and 6, but is %d", scoreName, parsedScore));
 
         return parsedScore;
     }
