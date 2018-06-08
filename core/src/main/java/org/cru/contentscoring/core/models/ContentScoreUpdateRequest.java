@@ -2,7 +2,7 @@ package org.cru.contentscoring.core.models;
 
 public class ContentScoreUpdateRequest {
     private String uri;
-    private ContentScore score;
+    private int score;
 
     public String getUri() {
         return uri;
@@ -12,11 +12,11 @@ public class ContentScoreUpdateRequest {
         this.uri = uri;
     }
 
-    public ContentScore getScore() {
+    public int getScore() {
         return score;
     }
 
-    public void setScore(final ContentScore score) {
+    public void setScore(final int score) {
         this.score = score;
     }
 }

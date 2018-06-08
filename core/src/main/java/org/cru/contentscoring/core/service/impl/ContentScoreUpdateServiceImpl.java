@@ -16,9 +16,7 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
-import org.cru.contentscoring.core.models.ContentScore;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
-import org.cru.contentscoring.core.models.ScoreType;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
 import org.slf4j.Logger;
@@ -119,56 +117,33 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     public void updateContentScore(final Page page) throws RepositoryException {
         ValueMap pageProperties = page.getProperties();
 
-        if (!hasAllScores(pageProperties)) {
-            // All scores are required for update
+        int score = getScore(pageProperties);
+        if (score == -1) {
             return;
         }
 
         ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
         request.setUri(getPageUrl(page));
-        request.setScore(createScore(pageProperties));
+        request.setScore(score);
 
         sendUpdateRequest(request);
         setContentScoreUpdatedDate(page);
     }
 
     @VisibleForTesting
-    boolean hasAllScores(final ValueMap pageProperties) {
-        return pageProperties.get(ScoreType.UNAWARE.getPropertyName()) != null
-            && pageProperties.get(ScoreType.CURIOUS.getPropertyName()) != null
-            && pageProperties.get(ScoreType.FOLLOWER.getPropertyName()) != null
-            && pageProperties.get(ScoreType.GUIDE.getPropertyName()) != null
-            && pageProperties.get(ScoreType.CONFIDENCE.getPropertyName()) != null;
-    }
+    int getScore(final ValueMap pageProperties) {
+        String scoreString = pageProperties.get("score", String.class);
+        if (scoreString == null) {
+            // Score is required for update
+            return -1;
+        }
 
-    @VisibleForTesting
-    ContentScore createScore(final ValueMap pageProperties) {
-        ContentScore contentScore = new ContentScore();
-
-        contentScore.setUnaware(getScore(pageProperties, ScoreType.UNAWARE.getPropertyName()));
-        contentScore.setCurious(getScore(pageProperties, ScoreType.CURIOUS.getPropertyName()));
-        contentScore.setFollower(getScore(pageProperties, ScoreType.FOLLOWER.getPropertyName()));
-        contentScore.setGuide(getScore(pageProperties, ScoreType.GUIDE.getPropertyName()));
-
-        String scoreConfidence = pageProperties.get(ScoreType.CONFIDENCE.getPropertyName(), String.class);
-        int parsedConfidence = Integer.parseInt(scoreConfidence);
+        int score = Integer.parseInt(scoreString);
         Preconditions.checkArgument(
-            parsedConfidence >= 0 && parsedConfidence <= 100,
-            String.format("%s must be between 1 and 100, but is %s", ScoreType.CONFIDENCE.getPropertyName(), scoreConfidence));
-        contentScore.setConfidence(parsedConfidence);
+            score >= 0 && score <= 10,
+            "Score must be between 0 and 10, but is " + score);
 
-        return contentScore;
-    }
-
-    private int getScore(final ValueMap pageProperties, final String scoreName) {
-        String score = pageProperties.get(scoreName, String.class);
-        Preconditions.checkNotNull(score, scoreName + " is required");
-        int parsedScore = Integer.parseInt(score);
-        Preconditions.checkArgument(
-            parsedScore >= 1 && parsedScore <= 6,
-            String.format("%s must be between 1 and 6, but is %d", scoreName, parsedScore));
-
-        return parsedScore;
+        return score;
     }
 
     @VisibleForTesting

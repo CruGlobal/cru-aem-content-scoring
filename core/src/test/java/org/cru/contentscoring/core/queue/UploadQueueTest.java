@@ -8,7 +8,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
-import org.cru.contentscoring.core.models.ContentScore;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.models.RetryElement;
 import org.junit.Before;
@@ -75,7 +74,7 @@ public class UploadQueueTest {
 
         request = new ContentScoreUpdateRequest();
         request.setUri("https://some-uri.com/page.html");
-        request.setScore(buildScore(1, 2, 3, 4, 100));
+        request.setScore(1);
 
         when(messageGatewayService.getGateway(HtmlEmail.class)).thenReturn(messageGateway);
     }
@@ -107,7 +106,7 @@ public class UploadQueueTest {
     public void testGetPendingBatchesWithRetry() {
         List<ContentScoreUpdateRequest> queue = Lists.newArrayList(request);
 
-        ContentScore retryScore = buildScore(1, 1, 3, 4, 100);
+        int retryScore = 1;
 
         ContentScoreUpdateRequest retryRequest = new ContentScoreUpdateRequest();
         retryRequest.setUri("https://some-uri.com/retry-page.html");
@@ -274,7 +273,7 @@ public class UploadQueueTest {
     public void testUpdateContentScoreRequestMultipleFailures() throws Exception {
         ContentScoreUpdateRequest request2 = new ContentScoreUpdateRequest();
         request2.setUri("some-uri");
-        request2.setScore(buildScore(2, 3, 4, 1, 90));
+        request2.setScore(2);
 
         List<ContentScoreUpdateRequest> batch = Lists.newArrayList(request, request2);
         RetryElement retryElement = new RetryElement(batch, 1);
@@ -311,28 +310,4 @@ public class UploadQueueTest {
 
         verify(uploadQueueSpy).handleFailedFirstAttempt(new ArrayList<>(failedRequests.keySet()));
     }
-
-    private ContentScore buildScore(
-        final int unaware,
-        final int curious,
-        final int follower,
-        final int guide,
-        final int confidence) {
-
-        ContentScore contentScore = new ContentScore();
-        contentScore.setUnaware(unaware);
-        contentScore.setCurious(curious);
-        contentScore.setFollower(follower);
-        contentScore.setGuide(guide);
-        contentScore.setConfidence(confidence);
-
-        return contentScore;
-    }
 }
-
-
-
-
-
-
-
