@@ -201,12 +201,20 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 SearchResult searchResult = search.getResult();
                 List<Hit> hits = searchResult.getHits();
 
+                if (hits.isEmpty()) {
+                    return null;
+                }
+
                 for (Hit hit : hits) {
                     LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
-                    if (hit.getPath().contains(nodeName) && hit.getPath().startsWith(pathScope)) {
-                        return hit.getPath();
-                    }
                 }
+
+                if (hits.size() > 1) {
+                    LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
+                    return null;
+                }
+
+                return Iterables.getOnlyElement(hits).getPath();
             }
         }
 
