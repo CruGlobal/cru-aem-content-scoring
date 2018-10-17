@@ -38,7 +38,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
     private static final String DEFAULT_PATH_SCOPE = "/content";
 
-    private Map<String, String> hostMap;
+    Map<String, String> hostMap;
 
     @Reference
     private SlingSettingsService slingSettingsService;
