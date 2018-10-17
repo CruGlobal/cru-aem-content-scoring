@@ -174,6 +174,10 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
                 return Iterables.getOnlyElement(hits).getResource().getParent();
             }
+        } else {
+            LOG.warn(
+                "Path not found: {}. Please check to make sure the configuration for hostMap is correct.",
+                pathScope);
         }
 
         return null;
