@@ -79,15 +79,23 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             }
         }
 
+        Resource parent = resourceResolver.getResource(pathScope);
+        if (parent == null) {
+            LOG.warn(
+                "Path not found: {}. Please check to make sure the configuration for hostMap is correct.",
+                pathScope);
+            return;
+        }
+
         String candidateVanity = mappedPathInfo.getResourcePath();
 
         LOG.debug("Candidate vanity URL to check: {}", candidateVanity);
 
-        String vanityPath = getVanityPath(pathScope, candidateVanity, resourceResolver);
+        String vanityPath = getVanityPath(pathScope, candidateVanity, resourceResolver, parent);
         if (vanityPath != null && !StringUtils.equals(candidateVanity, vanityPath)) {
             updateScoreForPath(vanityPath, resourceResolver, score);
         } else {
-            String actualPath = determineActualPath(resourcePath, pathScope, resourceResolver);
+            String actualPath = determineActualPath(resourcePath, parent);
 
             if (actualPath != null) {
                 updateScoreForPath(actualPath, resourceResolver, score);
@@ -108,7 +116,8 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private String getVanityPath(
         final String pathScope,
         final String vanityPath,
-        final ResourceResolver resourceResolver) throws RepositoryException {
+        final ResourceResolver resourceResolver,
+        final Resource parent) throws RepositoryException {
 
         Resource vanityResource = resourceResolver.getResource(vanityPath);
         String targetPath = null;
@@ -127,7 +136,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 return targetPath;
             }
         } else {
-            Resource actualPage = searchForResourceWithVanityPath(pathScope, vanityPath, resourceResolver);
+            Resource actualPage = searchForResourceWithVanityPath(vanityPath, parent);
             if (actualPage != null) {
                 return actualPage.getPath();
             }
@@ -137,47 +146,39 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     }
 
     private Resource searchForResourceWithVanityPath(
-        final String pathScope,
         final String vanityPath,
-        final ResourceResolver resourceResolver) throws RepositoryException {
-        Resource parent = resourceResolver.getResource(pathScope);
+        final Resource parent) throws RepositoryException {
 
-        if (parent != null) {
-            SimpleSearch search = parent.adaptTo(SimpleSearch.class);
+        SimpleSearch search = parent.adaptTo(SimpleSearch.class);
 
-            if (search != null) {
-                Predicate vanityPathPredicate = new Predicate("property");
-                vanityPathPredicate.set("property", "sling:vanityPath");
-                vanityPathPredicate.set("value", "%" + vanityPath.substring(1));
-                vanityPathPredicate.set("operation", "like");
-                search.addPredicate(vanityPathPredicate);
+        if (search != null) {
+            Predicate vanityPathPredicate = new Predicate("property");
+            vanityPathPredicate.set("property", "sling:vanityPath");
+            vanityPathPredicate.set("value", "%" + vanityPath.substring(1));
+            vanityPathPredicate.set("operation", "like");
+            search.addPredicate(vanityPathPredicate);
 
-                Predicate typePredicate = new Predicate("type");
-                typePredicate.set("type", "cq:PageContent");
-                search.addPredicate(typePredicate);
+            Predicate typePredicate = new Predicate("type");
+            typePredicate.set("type", "cq:PageContent");
+            search.addPredicate(typePredicate);
 
-                SearchResult searchResult = search.getResult();
-                List<Hit> hits = searchResult.getHits();
+            SearchResult searchResult = search.getResult();
+            List<Hit> hits = searchResult.getHits();
 
-                if (hits.isEmpty()) {
-                    return null;
-                }
-
-                for (Hit hit : hits) {
-                    LOG.debug("Found path: {} for sling:vanityPath", hit.getPath());
-                }
-
-                if (hits.size() > 1) {
-                    LOG.warn("Found more than one page with vanity path {}, skipping score sync.", vanityPath);
-                    return null;
-                }
-
-                return Iterables.getOnlyElement(hits).getResource().getParent();
+            if (hits.isEmpty()) {
+                return null;
             }
-        } else {
-            LOG.warn(
-                "Path not found: {}. Please check to make sure the configuration for hostMap is correct.",
-                pathScope);
+
+            for (Hit hit : hits) {
+                LOG.debug("Found path: {} for sling:vanityPath", hit.getPath());
+            }
+
+            if (hits.size() > 1) {
+                LOG.warn("Found more than one page with vanity path {}, skipping score sync.", vanityPath);
+                return null;
+            }
+
+            return Iterables.getOnlyElement(hits).getResource().getParent();
         }
 
         return null;
@@ -185,41 +186,36 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
     private String determineActualPath(
         final String resourcePath,
-        final String pathScope,
-        final ResourceResolver resourceResolver) throws RepositoryException {
+        final Resource parent) throws RepositoryException {
 
-        Resource parent = resourceResolver.getResource(pathScope);
+        SimpleSearch search = parent.adaptTo(SimpleSearch.class);
 
-        if (parent != null) {
-            SimpleSearch search = parent.adaptTo(SimpleSearch.class);
+        if (search != null) {
+            int lastIndexOfSlash = resourcePath.lastIndexOf("/");
+            String nodeName = resourcePath.substring(lastIndexOfSlash + 1);
 
-            if (search != null) {
-                int lastIndexOfSlash = resourcePath.lastIndexOf("/");
-                String nodeName = resourcePath.substring(lastIndexOfSlash + 1);
+            Predicate nodeNamePredicate = new Predicate( "nodename");
+            nodeNamePredicate.set("nodename", nodeName);
 
-                Predicate nodeNamePredicate = new Predicate( "nodename");
-                nodeNamePredicate.set("nodename", nodeName);
+            search.addPredicate(nodeNamePredicate);
 
-                search.addPredicate(nodeNamePredicate);
+            SearchResult searchResult = search.getResult();
+            List<Hit> hits = searchResult.getHits();
 
-                SearchResult searchResult = search.getResult();
-                List<Hit> hits = searchResult.getHits();
-
-                if (hits.isEmpty()) {
-                    return null;
-                }
-
-                for (Hit hit : hits) {
-                    LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
-                }
-
-                if (hits.size() > 1) {
-                    LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
-                    return null;
-                }
-
-                return Iterables.getOnlyElement(hits).getPath();
+            if (hits.isEmpty()) {
+                return null;
             }
+
+            for (Hit hit : hits) {
+                LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
+            }
+
+            if (hits.size() > 1) {
+                LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
+                return null;
+            }
+
+            return Iterables.getOnlyElement(hits).getPath();
         }
 
         return null;
