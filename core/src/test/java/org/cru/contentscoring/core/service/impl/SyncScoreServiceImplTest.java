@@ -189,7 +189,12 @@ public class SyncScoreServiceImplTest {
         Hit hit = mockHit(ABSOLUTE_PATH);
         Hit hit2 = mockHit("/content/otherApp/some/path");
 
-        mockSearch(hit, hit2);
+        Query query1 = mock(Query.class);
+        mockSearch(query1, hit, hit2);
+
+        Query query2 = mock(Query.class);
+        mockSearch(query2);
+        when(queryBuilder.createQuery(any(PredicateGroup.class), eq(session))).thenReturn(query1).thenReturn(query2);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
@@ -217,6 +222,7 @@ public class SyncScoreServiceImplTest {
     @Test
     public void testVanityLookupForManualSearchFindsNoResultsButActualPathFound() throws Exception {
         Resource parent = mock(Resource.class);
+        when(parent.getPath()).thenReturn(PATH_SCOPE);
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
         Query query1 = mock(Query.class);

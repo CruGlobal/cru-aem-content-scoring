@@ -10,6 +10,7 @@ import com.day.cq.search.result.SearchResult;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.felix.scr.annotations.Component;
@@ -201,16 +202,20 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             return null;
         }
 
+        List<Hit> filteredHits = Lists.newArrayList();
         for (Hit hit : hits) {
-            LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
+            if (hit.getPath().startsWith(parent.getPath()) && hit.getPath().endsWith(resourcePath)) {
+                LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
+                filteredHits.add(hit);
+            }
         }
 
-        if (hits.size() > 1) {
+        if (filteredHits.size() > 1) {
             LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
             return null;
         }
 
-        return Iterables.getOnlyElement(hits).getPath();
+        return Iterables.getOnlyElement(filteredHits).getPath();
     }
 
     private String determinePathFromSlingMap(
