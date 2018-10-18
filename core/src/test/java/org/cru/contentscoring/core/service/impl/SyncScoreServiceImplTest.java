@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.search.SimpleSearch;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -75,9 +74,7 @@ public class SyncScoreServiceImplTest {
 
         when(slingSettingsService.getRunModes()).thenReturn(Sets.newHashSet("author", "local"));
 
-        syncScoreService.hostMap = ImmutableMap.of(
-            HOST, PATH_SCOPE
-        );
+        mockSlingMap(HOST, PATH_SCOPE);
     }
 
     @Test
@@ -263,23 +260,10 @@ public class SyncScoreServiceImplTest {
 
     @Test
     public void testHomePage() throws Exception {
-        Resource parentMapResource = mock(Resource.class);
-        when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
-
-        Resource protocolResource = mock(Resource.class);
-        when(parentMapResource.getChild(RESOURCE_PROTOCOL)).thenReturn(protocolResource);
-
-        Resource slingMapResource = mock(Resource.class);
-        when(protocolResource.getChild("www.someApp_com")).thenReturn(slingMapResource);
-
         String internalRedirect = PATH_SCOPE + "/us/en.html";
         String actualPath = PATH_SCOPE + "/us/en";
 
-        Map<String, Object> baseMap = Maps.newHashMap();
-        baseMap.put("sling:internalRedirect", new String[] { internalRedirect });
-        ValueMap valueMap = new ValueMapDecorator(baseMap);
-
-        when(slingMapResource.getValueMap()).thenReturn(valueMap);
+        mockSlingMap("www.someApp_com", internalRedirect);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap, actualPath);
@@ -344,6 +328,24 @@ public class SyncScoreServiceImplTest {
         doAnswer(setProperty(propertyMap)).when(contentNode).setProperty(anyString(), any(Calendar.class));
 
         when(contentResource.adaptTo(Node.class)).thenReturn(contentNode);
+    }
+
+    private void mockSlingMap(final String host, final String internalRedirect) {
+        Map<String, Object> baseMap = Maps.newHashMap();
+        baseMap.put("sling:internalRedirect", new String[] { internalRedirect });
+        ValueMap valueMap = new ValueMapDecorator(baseMap);
+
+
+        Resource parentMapResource = mock(Resource.class);
+        when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
+
+        Resource protocolResource = mock(Resource.class);
+        when(parentMapResource.getChild(RESOURCE_PROTOCOL)).thenReturn(protocolResource);
+
+        Resource slingMapResource = mock(Resource.class);
+        when(slingMapResource.getValueMap()).thenReturn(valueMap);
+
+        when(protocolResource.getChild(host)).thenReturn(slingMapResource);
     }
 
     private Answer<Property> setProperty(final Map<String, Object> propertyMap) {

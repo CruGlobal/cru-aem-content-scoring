@@ -10,7 +10,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
@@ -18,7 +17,6 @@ import org.apache.sling.api.request.RequestPathInfo;
 import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.service.SyncScoreService;
 import org.cru.contentscoring.core.util.SystemUtils;
@@ -40,18 +38,11 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
     private static final String DEFAULT_PATH_SCOPE = "/content";
 
-    Map<String, String> hostMap;
-
     @Reference
     private SlingSettingsService slingSettingsService;
 
     @Reference
     private SystemUtils systemUtils;
-
-    @Activate
-    public void activate(final Map<String, Object> config) {
-        hostMap = PropertiesUtil.toMap(config.get("hostMap"), null);
-    }
 
     @Override
     public void syncScore(
@@ -70,25 +61,15 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         }
 
         if (resourcePathWithoutExtension.equals("/")) {
-            String actualPath = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver);
+            String actualPath = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, true);
             updateScoreForPath(actualPath, resourceResolver, score);
             return;
         }
 
         RequestPathInfo mappedPathInfo = new PathInfo(resourceResolver, resourcePathWithoutExtension);
-        String pathScope = DEFAULT_PATH_SCOPE;
-
-        if (hostMap != null) {
-            for (Map.Entry<String, String> entry : hostMap.entrySet()) {
-                String host = entry.getKey();
-                String path = entry.getValue();
-
-                if (host.contains(resourceHost)) {
-                    pathScope = path;
-                    break;
-                }
-            }
-        }
+        String pathScope = StringUtils.defaultIfEmpty(
+            determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, false),
+            DEFAULT_PATH_SCOPE);
 
         Resource parent = resourceResolver.getResource(pathScope);
         if (parent == null) {
@@ -235,7 +216,8 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private String determinePathFromSlingMap(
         final String host,
         final String protocol,
-        final ResourceResolver resourceResolver) {
+        final ResourceResolver resourceResolver,
+        final boolean homePage) {
 
         String pathToSlingMapping = determineSlingMappingPath();
 
@@ -251,10 +233,12 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             Resource protocolResource = parentMapResource.getChild(protocol);
 
             if (protocolResource != null) {
-                int lastIndexOfPeriod = host.lastIndexOf(".");
-                String hostWithUnderscore = host.substring(0, lastIndexOfPeriod) + "_" + host.substring(lastIndexOfPeriod + 1);
-
-                Resource slingMapResource = protocolResource.getChild(hostWithUnderscore);
+                String hostName = host;
+                if (homePage) {
+                    int lastIndexOfPeriod = host.lastIndexOf(".");
+                    hostName = host.substring(0, lastIndexOfPeriod) + "_" + host.substring(lastIndexOfPeriod + 1);
+                }
+                Resource slingMapResource = protocolResource.getChild(hostName);
 
                 if (slingMapResource != null) {
                     String[] internalRedirect = (String[]) slingMapResource.getValueMap().get("sling:internalRedirect");
