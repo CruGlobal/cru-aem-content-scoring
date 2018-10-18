@@ -57,6 +57,11 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
         String resourcePath = removeExtension(webPath);
         final String resourceHost = request.getParameter("resourceUri[hostname]");
 
+        if (resourceHost == null) {
+            response.sendError(400, "Invalid resource URI");
+            return;
+        }
+
         executor.submit(() -> {
             try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)){
                 syncScoreService.syncScore(resourceResolver, score, resourcePath, resourceHost);
