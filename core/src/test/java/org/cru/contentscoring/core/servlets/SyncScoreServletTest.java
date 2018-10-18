@@ -18,31 +18,25 @@ public class SyncScoreServletTest {
 
     private String invalidScore;
     private String validScore;
-    private String webPath;
-    private String resourcePath;
 
     @Parameters
     public static Collection<Object[]> testData() {
         return Arrays.asList(new Object[][] {
-            { "a", "0", "/some/path.html", "/some/path" },
-            { "-1", "1", "/some/path", "/some/path" },
-            { "11", "10", "/some/path.pdf", "/some/path" },
-            { "4.5", "5", "/some/image.jpg", "/some/image" },
-            { "", "7", "/some/really/long/path/that/is/very/deep.html", "/some/really/long/path/that/is/very/deep" },
-            { null, "3", "/path", "/path" }
+            { "a", "0" },
+            { "-1", "1" },
+            { "11", "10" },
+            { "4.5", "5" },
+            { "", "7" },
+            { null, "3" }
         });
     }
 
     public SyncScoreServletTest(
         final String invalidScore,
-        final String validScore,
-        final String webPath,
-        final String resourcePath) {
+        final String validScore) {
 
         this.invalidScore = invalidScore;
         this.validScore = validScore;
-        this.webPath = webPath;
-        this.resourcePath = resourcePath;
     }
 
     @Test
@@ -53,10 +47,5 @@ public class SyncScoreServletTest {
     @Test
     public void testValidScore() {
         assertThat(syncScoreServlet.scoreIsValid(validScore), is(equalTo(true)));
-    }
-
-    @Test
-    public void testRemoveExtension() {
-        assertThat(syncScoreServlet.removeExtension(webPath), is(equalTo(resourcePath)));
     }
 }

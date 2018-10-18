@@ -6,6 +6,8 @@ import com.day.cq.search.Predicate;
 import com.day.cq.search.SimpleSearch;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.felix.scr.annotations.Activate;
@@ -56,15 +58,24 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         final ResourceResolver resourceResolver,
         final int score,
         final String resourcePath,
-        final String resourceHost) throws RepositoryException, ReplicationException, LoginException {
+        final String resourceHost,
+        final String resourceProtocol) throws RepositoryException, ReplicationException, LoginException {
 
-        if (resourcePath.startsWith("/content")) {
+        String resourcePathWithoutExtension = removeExtension(resourcePath);
+
+        if (resourcePathWithoutExtension.startsWith("/content")) {
             // Absolute path, so just update score
-            updateScoreForPath(resourcePath, resourceResolver, score);
+            updateScoreForPath(resourcePathWithoutExtension, resourceResolver, score);
             return;
         }
 
-        RequestPathInfo mappedPathInfo = new PathInfo(resourceResolver, resourcePath);
+        if (resourcePathWithoutExtension.equals("/")) {
+            String actualPath = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver);
+            updateScoreForPath(actualPath, resourceResolver, score);
+            return;
+        }
+
+        RequestPathInfo mappedPathInfo = new PathInfo(resourceResolver, resourcePathWithoutExtension);
         String pathScope = DEFAULT_PATH_SCOPE;
 
         if (hostMap != null) {
@@ -95,7 +106,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         if (vanityPath != null && !StringUtils.equals(candidateVanity, vanityPath)) {
             updateScoreForPath(vanityPath, resourceResolver, score);
         } else {
-            String actualPath = determineActualPath(resourcePath, parent);
+            String actualPath = determineActualPath(resourcePathWithoutExtension, parent);
 
             if (actualPath != null) {
                 updateScoreForPath(actualPath, resourceResolver, score);
@@ -221,6 +232,59 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         return null;
     }
 
+    private String determinePathFromSlingMap(
+        final String host,
+        final String protocol,
+        final ResourceResolver resourceResolver) {
+
+        String pathToSlingMapping = determineSlingMappingPath();
+
+        if (pathToSlingMapping == null) {
+            LOG.debug("Path to sling mapping was not found, skipping home page sync");
+            return null;
+        }
+
+        Resource parentMapResource = resourceResolver.getResource(pathToSlingMapping);
+
+        if (parentMapResource != null) {
+
+            Resource protocolResource = parentMapResource.getChild(protocol);
+
+            if (protocolResource != null) {
+                int lastIndexOfPeriod = host.lastIndexOf(".");
+                String hostWithUnderscore = host.substring(0, lastIndexOfPeriod) + "_" + host.substring(lastIndexOfPeriod + 1);
+
+                Resource slingMapResource = protocolResource.getChild(hostWithUnderscore);
+
+                if (slingMapResource != null) {
+                    String[] internalRedirect = (String[]) slingMapResource.getValueMap().get("sling:internalRedirect");
+                    return removeExtension(internalRedirect[0]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private String determineSlingMappingPath() {
+        Map<String, String> environmentMap = ImmutableMap.of(
+            "local", "/etc/map.publish.local",
+            "dev", "/etc/map.publish.dev",
+            "uat", "/etc/map.publish.uat",
+            "prod", "/etc/map.publish.prod"
+        );
+
+        String pathToSlingMapping = null;
+        for (String runMode : slingSettingsService.getRunModes()) {
+            if (environmentMap.containsKey(runMode)) {
+                pathToSlingMapping = environmentMap.get(runMode);
+                break;
+            }
+        }
+
+        return pathToSlingMapping;
+    }
+
     private void updateScoreForPath(
         final String jcrPath,
         final ResourceResolver resourceResolver,
@@ -234,6 +298,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             if (contentResource != null) {
                 Node node = contentResource.adaptTo(Node.class);
                 if (node != null) {
+                    LOG.debug("Setting score on {} to {}", node.getPath(), score);
                     node.setProperty("score", Integer.toString(score));
 
                     Calendar now = Calendar.getInstance();
@@ -256,5 +321,15 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 }
             }
         }
+    }
+
+    @VisibleForTesting
+    String removeExtension(final String resourcePath) {
+        int lastIndexOfPeriod = resourcePath.lastIndexOf(".");
+
+        if (lastIndexOfPeriod > -1) {
+            return resourcePath.substring(0, lastIndexOfPeriod);
+        }
+        return resourcePath;
     }
 }

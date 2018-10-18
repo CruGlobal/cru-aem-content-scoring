@@ -8,6 +8,10 @@ import org.apache.sling.api.resource.ResourceResolver;
 import javax.jcr.RepositoryException;
 
 public interface SyncScoreService {
-    void syncScore(ResourceResolver resourceResolver, int score, String resourcePath, String resourceHost)
-        throws RepositoryException, ReplicationException, LoginException;
+    void syncScore(
+        ResourceResolver resourceResolver,
+        int score,
+        String resourcePath,
+        String resourceHost,
+        String resourceProtocol) throws RepositoryException, ReplicationException, LoginException;
 }

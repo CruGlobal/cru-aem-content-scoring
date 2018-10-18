@@ -1,7 +1,6 @@
 package org.cru.contentscoring.core.servlets;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.sling.SlingServlet;
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -47,24 +46,23 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
             return;
         }
 
-        String webPath = StringUtils.defaultIfEmpty(request.getParameter("resourceUri[pathname]"), "/");
-        if (webPath.equals("/")) {
-            // Single slash (e.g. home page) does not search well in SyncScoreService, so do not sync it.
-            // TODO: Instead, get the home page path from /etc/map.publish.env
-            LOG.debug("Path is \"/\", skipping sync.");
-            return;
-        }
-        String resourcePath = removeExtension(webPath);
+        final String resourcePath = request.getParameter("resourceUri[pathname]");
         final String resourceHost = request.getParameter("resourceUri[hostname]");
+        final String resourceProtocol = request.getParameter("resourceUri[protocol]");
 
-        if (resourceHost == null) {
+        if (resourceHost == null || resourcePath == null || resourceProtocol == null) {
             response.sendError(400, "Invalid resource URI");
             return;
         }
 
         executor.submit(() -> {
             try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)){
-                syncScoreService.syncScore(resourceResolver, score, resourcePath, resourceHost);
+                syncScoreService.syncScore(
+                    resourceResolver,
+                    score,
+                    resourcePath,
+                    resourceHost,
+                    resourceProtocol.replace(":", ""));
             } catch (Exception e) {
                 LOG.error("Failed to sync score from scale-of-belief-lambda", e);
             }
@@ -81,15 +79,5 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
         }
 
         return score >= 0 && score <= 10;
-    }
-
-    @VisibleForTesting
-    String removeExtension(final String resourcePath) {
-        int lastIndexOfPeriod = resourcePath.lastIndexOf(".");
-
-        if (lastIndexOfPeriod > -1) {
-            return resourcePath.substring(0, lastIndexOfPeriod);
-        }
-        return resourcePath;
     }
 }

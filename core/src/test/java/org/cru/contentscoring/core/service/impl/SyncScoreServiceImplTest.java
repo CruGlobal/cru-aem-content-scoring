@@ -46,7 +46,8 @@ public class SyncScoreServiceImplTest {
     private static final String VANITY_PATH = "/some/path";
     private static final String PATH_SCOPE = "/content/someApp";
     private static final String ABSOLUTE_PATH = PATH_SCOPE + VANITY_PATH;
-    
+    private static final String RESOURCE_PROTOCOL = "https";
+
     private static final int SCORE = 5;
     
     @Mock
@@ -72,7 +73,7 @@ public class SyncScoreServiceImplTest {
         when(resourceResolver.adaptTo(Session.class)).thenReturn(session);
         doNothing().when(session).save();
 
-        when(slingSettingsService.getRunModes()).thenReturn(Sets.newHashSet("author"));
+        when(slingSettingsService.getRunModes()).thenReturn(Sets.newHashSet("author", "local"));
 
         syncScoreService.hostMap = ImmutableMap.of(
             HOST, PATH_SCOPE
@@ -89,7 +90,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }
@@ -98,7 +99,7 @@ public class SyncScoreServiceImplTest {
     public void testAbsolutePathNotFound() throws Exception {
         when(resourceResolver.getResource(ABSOLUTE_PATH)).thenReturn(null);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSkipped();
     }
@@ -107,7 +108,7 @@ public class SyncScoreServiceImplTest {
     public void testMissingContentInMap() throws Exception {
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(null);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         verify(resourceResolver, never()).getResource(VANITY_PATH);
         assertSkipped();
@@ -131,7 +132,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }
@@ -150,7 +151,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }
@@ -172,7 +173,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }
@@ -190,7 +191,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSkipped();
     }
@@ -205,7 +206,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSkipped();
     }
@@ -229,7 +230,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST);
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }
@@ -255,9 +256,51 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap, jcrPath);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, resourcePath, "otherApp.org");
+        syncScoreService.syncScore(resourceResolver, SCORE, resourcePath, "otherApp.org", RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap, jcrPath);
+    }
+
+    @Test
+    public void testHomePage() throws Exception {
+        Resource parentMapResource = mock(Resource.class);
+        when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
+
+        Resource protocolResource = mock(Resource.class);
+        when(parentMapResource.getChild(RESOURCE_PROTOCOL)).thenReturn(protocolResource);
+
+        Resource slingMapResource = mock(Resource.class);
+        when(protocolResource.getChild("www.someApp_com")).thenReturn(slingMapResource);
+
+        String internalRedirect = PATH_SCOPE + "/us/en.html";
+        String actualPath = PATH_SCOPE + "/us/en";
+
+        Map<String, Object> baseMap = Maps.newHashMap();
+        baseMap.put("sling:internalRedirect", new String[] { internalRedirect });
+        ValueMap valueMap = new ValueMapDecorator(baseMap);
+
+        when(slingMapResource.getValueMap()).thenReturn(valueMap);
+
+        Map<String, Object> propertyMap = Maps.newHashMap();
+        mockForUpdateScore(propertyMap, actualPath);
+
+        syncScoreService.syncScore(resourceResolver, SCORE, "/", HOST, RESOURCE_PROTOCOL);
+
+        assertSuccessful(propertyMap, actualPath);
+    }
+
+    @Test
+    public void testRemoveExtension() {
+        String webPath = "/some/path.html";
+        String resourcePath = "/some/path";
+        assertThat(syncScoreService.removeExtension(webPath), is(equalTo(resourcePath)));
+    }
+
+    @Test
+    public void testRemoveExtensionOnPathWithoutExtension() {
+        String webPath = "/some/path";
+        String resourcePath = "/some/path";
+        assertThat(syncScoreService.removeExtension(webPath), is(equalTo(resourcePath)));
     }
 
     private Hit mockHit(final String jcrPath) throws Exception {
