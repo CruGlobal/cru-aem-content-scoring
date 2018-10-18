@@ -2,13 +2,15 @@ package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.commons.PathInfo;
 import com.day.cq.replication.ReplicationException;
-import com.day.cq.search.Predicate;
-import com.day.cq.search.SimpleSearch;
+import com.day.cq.search.PredicateGroup;
+import com.day.cq.search.Query;
+import com.day.cq.search.QueryBuilder;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Reference;
@@ -43,6 +45,9 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
     @Reference
     private SystemUtils systemUtils;
+
+    @Reference
+    private QueryBuilder queryBuilder;
 
     @Override
     public void syncScore(
@@ -87,7 +92,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         if (vanityPath != null && !StringUtils.equals(candidateVanity, vanityPath)) {
             updateScoreForPath(vanityPath, resourceResolver, score);
         } else {
-            String actualPath = determineActualPath(resourcePathWithoutExtension, parent);
+            String actualPath = determineActualPath(resourcePathWithoutExtension, parent, resourceResolver);
 
             if (actualPath != null) {
                 updateScoreForPath(actualPath, resourceResolver, score);
@@ -128,7 +133,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 return targetPath;
             }
         } else {
-            Resource actualPage = searchForResourceWithVanityPath(vanityPath, parent);
+            Resource actualPage = searchForResourceWithVanityPath(vanityPath, parent, resourceResolver);
             if (actualPage != null) {
                 return actualPage.getPath();
             }
@@ -139,78 +144,73 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
     private Resource searchForResourceWithVanityPath(
         final String vanityPath,
-        final Resource parent) throws RepositoryException {
+        final Resource parent,
+        final ResourceResolver resourceResolver) throws RepositoryException {
 
-        SimpleSearch search = parent.adaptTo(SimpleSearch.class);
 
-        if (search != null) {
-            Predicate vanityPathPredicate = new Predicate("property");
-            vanityPathPredicate.set("property", "sling:vanityPath");
-            vanityPathPredicate.set("value", "%" + vanityPath.substring(1));
-            vanityPathPredicate.set("operation", "like");
-            search.addPredicate(vanityPathPredicate);
+        Map<String, String> searchPredicates = Maps.newHashMap();
+        searchPredicates.put("property", "sling:vanityPath");
+        searchPredicates.put("property.value", "%" + vanityPath.substring(1));
+        searchPredicates.put("property.operation", "like");
 
-            Predicate typePredicate = new Predicate("type");
-            typePredicate.set("type", "cq:PageContent");
-            search.addPredicate(typePredicate);
+        searchPredicates.put("type", "cq:PageContent");
+        searchPredicates.put("path", parent.getPath());
 
-            SearchResult searchResult = search.getResult();
-            List<Hit> hits = searchResult.getHits();
+        Session session = resourceResolver.adaptTo(Session.class);
+        Query query = queryBuilder.createQuery(PredicateGroup.create(searchPredicates), session);
+        SearchResult searchResult = query.getResult();
+        List<Hit> hits = searchResult.getHits();
 
-            if (hits.isEmpty()) {
-                return null;
-            }
-
-            for (Hit hit : hits) {
-                LOG.debug("Found path: {} for sling:vanityPath", hit.getPath());
-            }
-
-            if (hits.size() > 1) {
-                LOG.warn("Found more than one page with vanity path {}, skipping score sync.", vanityPath);
-                return null;
-            }
-
-            return Iterables.getOnlyElement(hits).getResource().getParent();
+        if (hits.isEmpty()) {
+            return null;
         }
 
-        return null;
+        for (Hit hit : hits) {
+            LOG.debug("Found path: {} for sling:vanityPath", hit.getPath());
+        }
+
+        if (hits.size() > 1) {
+            LOG.warn("Found more than one page with vanity path {}, skipping score sync.", vanityPath);
+            return null;
+        }
+
+        return Iterables.getOnlyElement(hits).getResource().getParent();
     }
 
     private String determineActualPath(
         final String resourcePath,
-        final Resource parent) throws RepositoryException {
+        final Resource parent,
+        final ResourceResolver resourceResolver) throws RepositoryException {
 
-        SimpleSearch search = parent.adaptTo(SimpleSearch.class);
+        Map<String, String> searchPredicates = Maps.newHashMap();
 
-        if (search != null) {
-            int lastIndexOfSlash = resourcePath.lastIndexOf("/");
-            String nodeName = resourcePath.substring(lastIndexOfSlash + 1);
+        int lastIndexOfSlash = resourcePath.lastIndexOf("/");
+        String nodeName = resourcePath.substring(lastIndexOfSlash + 1);
 
-            Predicate nodeNamePredicate = new Predicate( "nodename");
-            nodeNamePredicate.set("nodename", nodeName);
+        searchPredicates.put("nodename", nodeName);
+        searchPredicates.put("type", "cq:Page");
+        searchPredicates.put("path", parent.getPath());
 
-            search.addPredicate(nodeNamePredicate);
+        Session session = resourceResolver.adaptTo(Session.class);
+        Query query = queryBuilder.createQuery(PredicateGroup.create(searchPredicates), session);
 
-            SearchResult searchResult = search.getResult();
-            List<Hit> hits = searchResult.getHits();
+        SearchResult searchResult = query.getResult();
+        List<Hit> hits = searchResult.getHits();
 
-            if (hits.isEmpty()) {
-                return null;
-            }
-
-            for (Hit hit : hits) {
-                LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
-            }
-
-            if (hits.size() > 1) {
-                LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
-                return null;
-            }
-
-            return Iterables.getOnlyElement(hits).getPath();
+        if (hits.isEmpty()) {
+            return null;
         }
 
-        return null;
+        for (Hit hit : hits) {
+            LOG.debug("Found path: {} for resource path {}", hit.getPath(), resourcePath);
+        }
+
+        if (hits.size() > 1) {
+            LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
+            return null;
+        }
+
+        return Iterables.getOnlyElement(hits).getPath();
     }
 
     private String determinePathFromSlingMap(

@@ -1,6 +1,8 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.search.SimpleSearch;
+import com.day.cq.search.PredicateGroup;
+import com.day.cq.search.Query;
+import com.day.cq.search.QueryBuilder;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
 import com.google.common.collect.Lists;
@@ -32,6 +34,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -60,6 +63,9 @@ public class SyncScoreServiceImplTest {
 
     @Mock
     private Session session;
+
+    @Mock
+    private QueryBuilder queryBuilder;
 
     @InjectMocks
     private SyncScoreServiceImpl syncScoreService;
@@ -165,7 +171,7 @@ public class SyncScoreServiceImplTest {
         when(hitResource.getParent()).thenReturn(pageResource);
         when(hit.getResource()).thenReturn(hitResource);
 
-        mockSearch(parent, hit);
+        mockSearch(hit);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
@@ -183,7 +189,7 @@ public class SyncScoreServiceImplTest {
         Hit hit = mockHit(ABSOLUTE_PATH);
         Hit hit2 = mockHit("/content/otherApp/some/path");
 
-        mockSearch(parent, hit, hit2);
+        mockSearch(hit, hit2);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
@@ -198,7 +204,7 @@ public class SyncScoreServiceImplTest {
         Resource parent = mock(Resource.class);
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
-        mockSearch(parent);
+        mockSearch();
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
@@ -213,16 +219,16 @@ public class SyncScoreServiceImplTest {
         Resource parent = mock(Resource.class);
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
-        SimpleSearch search1 = mock(SimpleSearch.class);
-        mockSearch(search1);
+        Query query1 = mock(Query.class);
+        mockSearch(query1);
 
         Hit hit = mock(Hit.class);
         when(hit.getPath()).thenReturn(ABSOLUTE_PATH);
 
-        SimpleSearch search2 = mock(SimpleSearch.class);
-        mockSearch(search2, hit);
+        Query query2 = mock(Query.class);
+        mockSearch(query2, hit);
 
-        when(parent.adaptTo(SimpleSearch.class)).thenReturn(search1).thenReturn(search2);
+        when(queryBuilder.createQuery(any(PredicateGroup.class), eq(session))).thenReturn(query1).thenReturn(query2);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap);
@@ -248,7 +254,7 @@ public class SyncScoreServiceImplTest {
         when(hitResource.getParent()).thenReturn(pageResource);
         when(hit.getResource()).thenReturn(hitResource);
 
-        mockSearch(parent, hit);
+        mockSearch(hit);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(propertyMap, jcrPath);
@@ -300,16 +306,17 @@ public class SyncScoreServiceImplTest {
         return hit;
     }
 
-    private void mockSearch(final Resource parent, final Hit... hits) throws Exception {
-        SimpleSearch search = mock(SimpleSearch.class);
-        mockSearch(search, hits);
-        when(parent.adaptTo(SimpleSearch.class)).thenReturn(search);
+    private void mockSearch(final Hit... hits) {
+        Query query = mock(Query.class);
+        mockSearch(query, hits);
+        when(queryBuilder.createQuery(any(PredicateGroup.class), eq(session))).thenReturn(query);
     }
 
-    private void mockSearch(final SimpleSearch search, final Hit... hits) throws Exception {
+    private void mockSearch(final Query query, final Hit... hits) {
         SearchResult searchResult = mock(SearchResult.class);
         when(searchResult.getHits()).thenReturn(Lists.newArrayList(hits));
-        when(search.getResult()).thenReturn(searchResult);
+        when(query.getResult()).thenReturn(searchResult);
+        when(query.getResult()).thenReturn(searchResult);
     }
 
     private void mockForUpdateScore(final Map<String, Object> propertyMap) throws Exception {
