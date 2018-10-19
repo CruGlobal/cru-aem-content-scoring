@@ -6,12 +6,15 @@ import com.day.cq.search.Query;
 import com.day.cq.search.QueryBuilder;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
+import com.day.crx.JcrConstants;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
@@ -87,7 +90,12 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         if (vanityPath != null && !StringUtils.equals(candidateVanity, vanityPath)) {
             updateScoreForPath(vanityPath, resourceResolver, score);
         } else {
-            String actualPath = determineActualPath(resourcePathWithoutExtension, parent, resourceResolver);
+            String actualPath = determineActualPath(
+                resourcePathWithoutExtension,
+                parent,
+                resourceResolver,
+                resourceHost,
+                resourceProtocol);
 
             if (actualPath != null) {
                 updateScoreForPath(actualPath, resourceResolver, score);
@@ -175,7 +183,9 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private String determineActualPath(
         final String resourcePath,
         final Resource parent,
-        final ResourceResolver resourceResolver) throws RepositoryException {
+        final ResourceResolver resourceResolver,
+        final String host,
+        final String protocol) throws RepositoryException {
 
         Map<String, String> searchPredicates = Maps.newHashMap();
 
@@ -205,11 +215,81 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         }
 
         if (filteredHits.size() > 1) {
+            MutablePair<String, String> countryLanguage = determineCountryLanguage(
+                resourcePath,
+                host,
+                protocol,
+                parent,
+                resourceResolver);
+
+            if (countryLanguage != null) {
+                for (Hit hit : filteredHits) {
+                    if (hit.getPath().contains(countryLanguage.getKey()) 
+                        && hit.getPath().contains(countryLanguage.getValue())) {
+                        
+                        return hit.getPath();
+                    }
+                }
+            }
             LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
             return null;
         }
 
         return Iterables.getOnlyElement(filteredHits).getPath();
+    }
+
+    private MutablePair<String, String> determineCountryLanguage(
+        final String resourcePath,
+        final String host,
+        final String protocol,
+        final Resource parent,
+        final ResourceResolver resourceResolver) {
+        List<MutablePair<String, String>> countryLanguageList = buildCountryLanguageList(parent);
+
+        String homePagePath = determinePathFromSlingMap(host, protocol, resourceResolver, true);
+        MutablePair<String, String> homeCountryLanguage = null;
+
+        for (MutablePair<String, String> countryLanguage : countryLanguageList) {
+            if (resourcePath.contains(countryLanguage.getKey()) && resourcePath.contains(countryLanguage.getValue())) {
+                return countryLanguage;
+            }
+            if (homePagePath != null &&
+                homePagePath.contains(countryLanguage.getKey()) && homePagePath.contains(countryLanguage.getValue())) {
+
+                homeCountryLanguage = countryLanguage;
+            }
+        }
+
+        return homeCountryLanguage;
+    }
+
+    private List<MutablePair<String, String>> buildCountryLanguageList(final Resource parent) {
+        List<String> knownNamesToSkip = ImmutableList.of(
+            JcrConstants.JCR_CONTENT,
+            "rep:policy",
+            "errors"
+        );
+        List<MutablePair<String, String>> countryLanguageList = Lists.newArrayList();
+        for (Resource child : parent.getChildren()) {
+            // These aren't necessarily all countries (e.g. gsw has "languages" here)
+            String country = child.getName();
+
+            if (knownNamesToSkip.contains(country)) {
+                continue;
+            }
+
+            for (Resource grandChild : child.getChildren()) {
+                // They aren't all necessarily languages, but I don't know a great way to ensure it is a language.
+                String language = grandChild.getName();
+
+                if (knownNamesToSkip.contains(language)) {
+                    continue;
+                }
+
+                countryLanguageList.add(new MutablePair<>(country, language));
+            }
+        }
+        return countryLanguageList;
     }
 
     private String determinePathFromSlingMap(

@@ -5,6 +5,7 @@ import com.day.cq.search.Query;
 import com.day.cq.search.QueryBuilder;
 import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
+import com.day.crx.JcrConstants;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -66,12 +67,21 @@ public class SyncScoreServiceImplTest {
     @InjectMocks
     private SyncScoreServiceImpl syncScoreService;
 
+    private Resource protocolResource;
+
     @Before
     public void setup() throws Exception {
         when(resourceResolver.adaptTo(Session.class)).thenReturn(session);
         doNothing().when(session).save();
 
         when(slingSettingsService.getRunModes()).thenReturn(Sets.newHashSet("author", "local"));
+
+        Resource parentMapResource;
+        parentMapResource = mock(Resource.class);
+        protocolResource = mock(Resource.class);
+
+        when(parentMapResource.getChild(RESOURCE_PROTOCOL)).thenReturn(protocolResource);
+        when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
 
         mockSlingMap(HOST, PATH_SCOPE);
     }
@@ -279,6 +289,55 @@ public class SyncScoreServiceImplTest {
     }
 
     @Test
+    public void testMultiplePagesFoundDifferentLanguages() throws Exception {
+        Resource jcrContent = mock(Resource.class);
+        when(jcrContent.getName()).thenReturn(JcrConstants.JCR_CONTENT);
+
+        Resource usChild = mock(Resource.class);
+        when(usChild.getName()).thenReturn("us");
+        Resource enChild = mock(Resource.class);
+        when(enChild.getName()).thenReturn("en");
+        when(usChild.getChildren()).thenReturn(Lists.newArrayList(enChild, jcrContent));
+
+        Resource mxChild = mock(Resource.class);
+        when(mxChild.getName()).thenReturn("mx");
+        Resource esChild = mock(Resource.class);
+        when(esChild.getName()).thenReturn("es");
+        when(mxChild.getChildren()).thenReturn(Lists.newArrayList(esChild, jcrContent));
+
+        Resource parent = mock(Resource.class);
+        when(parent.getChildren()).thenReturn(Lists.newArrayList(usChild, mxChild, jcrContent));
+        when(parent.getPath()).thenReturn(PATH_SCOPE);
+        when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
+
+        Query query1 = mock(Query.class);
+        mockSearch(query1);
+
+        Hit hit = mock(Hit.class);
+        when(hit.getPath()).thenReturn("/content/someApp/us/en/some/path");
+        Hit hit2 = mock(Hit.class);
+        when(hit2.getPath()).thenReturn("/content/someApp/mx/es/some/path");
+
+        Query query2 = mock(Query.class);
+        mockSearch(query2, hit, hit2);
+        when(queryBuilder.createQuery(any(PredicateGroup.class), eq(session))).thenReturn(query1).thenReturn(query2);
+
+        Map<String, Object> propertyMap = Maps.newHashMap();
+        mockForUpdateScore(propertyMap);
+
+        String internalRedirect = PATH_SCOPE + "/us/en.html";
+        String actualPath = PATH_SCOPE + "/us/en" + VANITY_PATH;
+
+        mockSlingMap("www.someApp_com", internalRedirect);
+        mockSlingMap(HOST, PATH_SCOPE);
+        mockForUpdateScore(propertyMap, actualPath);
+
+        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
+
+        assertSuccessful(propertyMap);
+    }
+
+    @Test
     public void testRemoveExtension() {
         String webPath = "/some/path.html";
         String resourcePath = "/some/path";
@@ -340,13 +399,6 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> baseMap = Maps.newHashMap();
         baseMap.put("sling:internalRedirect", new String[] { internalRedirect });
         ValueMap valueMap = new ValueMapDecorator(baseMap);
-
-
-        Resource parentMapResource = mock(Resource.class);
-        when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
-
-        Resource protocolResource = mock(Resource.class);
-        when(parentMapResource.getChild(RESOURCE_PROTOCOL)).thenReturn(protocolResource);
 
         Resource slingMapResource = mock(Resource.class);
         when(slingMapResource.getValueMap()).thenReturn(valueMap);
