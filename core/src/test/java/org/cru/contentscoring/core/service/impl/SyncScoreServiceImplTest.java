@@ -283,7 +283,7 @@ public class SyncScoreServiceImplTest {
 
         syncScoreService.syncScore(resourceResolver, SCORE, resourcePath, "otherApp.org", RESOURCE_PROTOCOL);
 
-        assertSuccessful(propertyMap);
+        assertSkipped();
     }
 
     @Test

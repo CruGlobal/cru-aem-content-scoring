@@ -39,7 +39,6 @@ import java.util.Map;
 @Service(SyncScoreService.class)
 public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
-    private static final String DEFAULT_PATH_SCOPE = "/content";
 
     @Reference
     private SlingSettingsService slingSettingsService;
@@ -72,10 +71,13 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         }
 
         RequestPathInfo mappedPathInfo = new PathInfo(resourceResolver, resourcePathWithoutExtension);
-        String pathScope = StringUtils.defaultIfEmpty(
-            determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, false),
-            DEFAULT_PATH_SCOPE);
+        String pathScope = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, false);
         LOG.debug("Path Scope: {}", pathScope);
+
+        if (StringUtils.isEmpty(pathScope)) {
+            LOG.info("Path scope not found for {}, {}. Skipping sync.", resourceHost, resourceProtocol);
+            return;
+        }
 
         Resource parent = resourceResolver.getResource(pathScope);
         if (parent == null) {
@@ -131,9 +133,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 targetPath = vanityResource.getPath();
             }
 
-            if (targetPath != null &&
-                StringUtils.startsWith(targetPath, StringUtils.defaultIfEmpty(pathScope, DEFAULT_PATH_SCOPE))) {
-
+            if (targetPath != null && StringUtils.startsWith(targetPath, pathScope)) {
                 LOG.debug("Found vanity resource at {} for sling:vanityPath {}", targetPath, vanityPath);
                 return targetPath;
             }
