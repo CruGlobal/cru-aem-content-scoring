@@ -270,7 +270,7 @@ public class SyncScoreServiceImplTest {
 
         syncScoreService.syncScore(resourceResolver, SCORE, resourcePath, "otherApp.org", RESOURCE_PROTOCOL);
 
-        assertSuccessful(propertyMap, jcrPath);
+        assertSuccessful(propertyMap);
     }
 
     @Test
@@ -285,7 +285,7 @@ public class SyncScoreServiceImplTest {
 
         syncScoreService.syncScore(resourceResolver, SCORE, "/", HOST, RESOURCE_PROTOCOL);
 
-        assertSuccessful(propertyMap, actualPath);
+        assertSuccessful(propertyMap);
     }
 
     @Test
@@ -414,11 +414,6 @@ public class SyncScoreServiceImplTest {
     }
 
     private void assertSuccessful(final Map<String, Object> propertyMap) throws Exception {
-        assertSuccessful(propertyMap, ABSOLUTE_PATH);
-    }
-
-    private void assertSuccessful(final Map<String, Object> propertyMap, final String jcrPath) throws Exception {
-
         assertThat(propertyMap.get("score"), is(equalTo(Integer.toString(SCORE))));
         assertThat(propertyMap.get("cq:lastModifiedBy"), is(equalTo("scale-of-belief")));
         assertThat(propertyMap.get("cq:lastModified"), is(notNullValue()));
