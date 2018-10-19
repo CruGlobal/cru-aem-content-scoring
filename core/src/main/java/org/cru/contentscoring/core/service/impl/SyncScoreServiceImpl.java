@@ -224,8 +224,8 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
             if (countryLanguage != null) {
                 for (Hit hit : filteredHits) {
-                    if (hit.getPath().contains(countryLanguage.getKey()) 
-                        && hit.getPath().contains(countryLanguage.getValue())) {
+                    if (hit.getPath().contains("/" + countryLanguage.getKey() + "/")
+                        && hit.getPath().contains("/" + countryLanguage.getValue())) {
                         
                         return hit.getPath();
                     }
@@ -250,11 +250,13 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         MutablePair<String, String> homeCountryLanguage = null;
 
         for (MutablePair<String, String> countryLanguage : countryLanguageList) {
-            if (resourcePath.contains(countryLanguage.getKey()) && resourcePath.contains(countryLanguage.getValue())) {
+            String countryString = "/" + countryLanguage.getKey() + "/";
+            String languageString = "/" + countryLanguage.getValue();
+            if (resourcePath.contains(countryString) && resourcePath.contains(languageString)) {
                 return countryLanguage;
             }
             if (homePagePath != null &&
-                homePagePath.contains(countryLanguage.getKey()) && homePagePath.contains(countryLanguage.getValue())) {
+                homePagePath.contains(countryString) && homePagePath.contains(languageString)) {
 
                 homeCountryLanguage = countryLanguage;
             }
