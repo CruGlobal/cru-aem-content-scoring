@@ -1,7 +1,6 @@
 package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.commons.PathInfo;
-import com.day.cq.replication.ReplicationException;
 import com.day.cq.search.PredicateGroup;
 import com.day.cq.search.Query;
 import com.day.cq.search.QueryBuilder;
@@ -17,12 +16,10 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.request.RequestPathInfo;
-import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.service.SyncScoreService;
-import org.cru.contentscoring.core.util.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +42,6 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private SlingSettingsService slingSettingsService;
 
     @Reference
-    private SystemUtils systemUtils;
-
-    @Reference
     private QueryBuilder queryBuilder;
 
     @Override
@@ -56,7 +50,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         final int score,
         final String resourcePath,
         final String resourceHost,
-        final String resourceProtocol) throws RepositoryException, ReplicationException, LoginException {
+        final String resourceProtocol) throws RepositoryException {
 
         String resourcePathWithoutExtension = removeExtension(resourcePath);
 
@@ -277,7 +271,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     private void updateScoreForPath(
         final String jcrPath,
         final ResourceResolver resourceResolver,
-        final int score) throws RepositoryException, ReplicationException, LoginException {
+        final int score) throws RepositoryException {
 
         Resource resource = resourceResolver.getResource(jcrPath);
 
@@ -302,10 +296,6 @@ public class SyncScoreServiceImpl implements SyncScoreService {
 
                     if (session != null) {
                         session.save();
-                    }
-
-                    if (slingSettingsService.getRunModes().contains("author")) {
-                        systemUtils.replicatePage(node.getPath());
                     }
                 }
             }

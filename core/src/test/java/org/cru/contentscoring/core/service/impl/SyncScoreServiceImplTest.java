@@ -13,7 +13,6 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
 import org.apache.sling.settings.SlingSettingsService;
-import org.cru.contentscoring.core.util.SystemUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,9 +55,6 @@ public class SyncScoreServiceImplTest {
     private SlingSettingsService slingSettingsService;
 
     @Mock
-    private SystemUtils systemUtils;
-
-    @Mock
     private ResourceResolver resourceResolver;
 
     @Mock
@@ -72,9 +68,6 @@ public class SyncScoreServiceImplTest {
 
     @Before
     public void setup() throws Exception {
-        doNothing().when(systemUtils).replicatePage(anyString());
-        when(systemUtils.getResourceResolver(anyString())).thenReturn(resourceResolver);
-
         when(resourceResolver.adaptTo(Session.class)).thenReturn(session);
         doNothing().when(session).save();
 
@@ -380,11 +373,9 @@ public class SyncScoreServiceImplTest {
         assertThat(propertyMap.get("contentScoreLastUpdated"), is(notNullValue()));
 
         verify(session).save();
-        verify(systemUtils).replicatePage(jcrPath + "/jcr:content");
     }
 
     private void assertSkipped() throws Exception {
         verify(session, never()).save();
-        verify(systemUtils, never()).replicatePage(anyString());
     }
 }

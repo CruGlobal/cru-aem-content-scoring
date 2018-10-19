@@ -1,8 +1,5 @@
 package org.cru.contentscoring.core.service;
 
-import com.day.cq.replication.ReplicationException;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.ResourceResolver;
 
 import javax.jcr.RepositoryException;
@@ -13,5 +10,5 @@ public interface SyncScoreService {
         int score,
         String resourcePath,
         String resourceHost,
-        String resourceProtocol) throws RepositoryException, ReplicationException, LoginException;
+        String resourceProtocol) throws RepositoryException;
 }
