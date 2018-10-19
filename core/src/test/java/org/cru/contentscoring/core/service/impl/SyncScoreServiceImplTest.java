@@ -68,6 +68,8 @@ public class SyncScoreServiceImplTest {
     private SyncScoreServiceImpl syncScoreService;
 
     private Resource protocolResource;
+    private Resource usChild;
+    private Resource jcrContent;
 
     @Before
     public void setup() throws Exception {
@@ -84,6 +86,14 @@ public class SyncScoreServiceImplTest {
         when(resourceResolver.getResource("/etc/map.publish.local")).thenReturn(parentMapResource);
 
         mockSlingMap(HOST, PATH_SCOPE);
+
+        jcrContent = mock(Resource.class);
+        when(jcrContent.getName()).thenReturn(JcrConstants.JCR_CONTENT);
+        usChild = mock(Resource.class);
+        when(usChild.getName()).thenReturn("us");
+        Resource enChild = mock(Resource.class);
+        when(enChild.getName()).thenReturn("en");
+        when(usChild.getChildren()).thenReturn(Lists.newArrayList(enChild, jcrContent));
     }
 
     @Test
@@ -187,6 +197,7 @@ public class SyncScoreServiceImplTest {
     @Test
     public void testVanityLookupForManualSearchFindsMultipleResults() throws Exception {
         Resource parent = mock(Resource.class);
+        when(parent.getChildren()).thenReturn(Lists.newArrayList(usChild, jcrContent));
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
         Hit hit = mockHit(ABSOLUTE_PATH);
@@ -210,6 +221,7 @@ public class SyncScoreServiceImplTest {
     @Test
     public void testVanityLookupForManualSearchFindsNoResultsNoContentEither() throws Exception {
         Resource parent = mock(Resource.class);
+        when(parent.getChildren()).thenReturn(Lists.newArrayList(usChild, jcrContent));
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
         mockSearch();
@@ -226,6 +238,7 @@ public class SyncScoreServiceImplTest {
     public void testVanityLookupForManualSearchFindsNoResultsButActualPathFound() throws Exception {
         Resource parent = mock(Resource.class);
         when(parent.getPath()).thenReturn(PATH_SCOPE);
+        when(parent.getChildren()).thenReturn(Lists.newArrayList(usChild, jcrContent));
         when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
 
         Query query1 = mock(Query.class);
@@ -284,55 +297,6 @@ public class SyncScoreServiceImplTest {
         mockForUpdateScore(propertyMap, actualPath);
 
         syncScoreService.syncScore(resourceResolver, SCORE, "/", HOST, RESOURCE_PROTOCOL);
-
-        assertSuccessful(propertyMap);
-    }
-
-    @Test
-    public void testMultiplePagesFoundDifferentLanguages() throws Exception {
-        Resource jcrContent = mock(Resource.class);
-        when(jcrContent.getName()).thenReturn(JcrConstants.JCR_CONTENT);
-
-        Resource usChild = mock(Resource.class);
-        when(usChild.getName()).thenReturn("us");
-        Resource enChild = mock(Resource.class);
-        when(enChild.getName()).thenReturn("en");
-        when(usChild.getChildren()).thenReturn(Lists.newArrayList(enChild, jcrContent));
-
-        Resource mxChild = mock(Resource.class);
-        when(mxChild.getName()).thenReturn("mx");
-        Resource esChild = mock(Resource.class);
-        when(esChild.getName()).thenReturn("es");
-        when(mxChild.getChildren()).thenReturn(Lists.newArrayList(esChild, jcrContent));
-
-        Resource parent = mock(Resource.class);
-        when(parent.getChildren()).thenReturn(Lists.newArrayList(usChild, mxChild, jcrContent));
-        when(parent.getPath()).thenReturn(PATH_SCOPE);
-        when(resourceResolver.getResource(PATH_SCOPE)).thenReturn(parent);
-
-        Query query1 = mock(Query.class);
-        mockSearch(query1);
-
-        Hit hit = mock(Hit.class);
-        when(hit.getPath()).thenReturn("/content/someApp/us/en/some/path");
-        Hit hit2 = mock(Hit.class);
-        when(hit2.getPath()).thenReturn("/content/someApp/mx/es/some/path");
-
-        Query query2 = mock(Query.class);
-        mockSearch(query2, hit, hit2);
-        when(queryBuilder.createQuery(any(PredicateGroup.class), eq(session))).thenReturn(query1).thenReturn(query2);
-
-        Map<String, Object> propertyMap = Maps.newHashMap();
-        mockForUpdateScore(propertyMap);
-
-        String internalRedirect = PATH_SCOPE + "/us/en.html";
-        String actualPath = PATH_SCOPE + "/us/en" + VANITY_PATH;
-
-        mockSlingMap("www.someApp_com", internalRedirect);
-        mockSlingMap(HOST, PATH_SCOPE);
-        mockForUpdateScore(propertyMap, actualPath);
-
-        syncScoreService.syncScore(resourceResolver, SCORE, VANITY_PATH, HOST, RESOURCE_PROTOCOL);
 
         assertSuccessful(propertyMap);
     }

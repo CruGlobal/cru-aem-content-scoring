@@ -63,9 +63,11 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             return;
         }
 
+        String homePagePath = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, true);
+        LOG.debug("Home Page Path: {}", homePagePath);
+
         if (resourcePathWithoutExtension.equals("/")) {
-            String actualPath = determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, true);
-            updateScoreForPath(actualPath, resourceResolver, score);
+            updateScoreForPath(homePagePath, resourceResolver, score);
             return;
         }
 
@@ -73,6 +75,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         String pathScope = StringUtils.defaultIfEmpty(
             determinePathFromSlingMap(resourceHost, resourceProtocol, resourceResolver, false),
             DEFAULT_PATH_SCOPE);
+        LOG.debug("Path Scope: {}", pathScope);
 
         Resource parent = resourceResolver.getResource(pathScope);
         if (parent == null) {
@@ -94,8 +97,7 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 resourcePathWithoutExtension,
                 parent,
                 resourceResolver,
-                resourceHost,
-                resourceProtocol);
+                homePagePath);
 
             if (actualPath != null) {
                 updateScoreForPath(actualPath, resourceResolver, score);
@@ -184,23 +186,32 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         final String resourcePath,
         final Resource parent,
         final ResourceResolver resourceResolver,
-        final String host,
-        final String protocol) throws RepositoryException {
+        final String homePagePath) throws RepositoryException {
 
-        Map<String, String> searchPredicates = Maps.newHashMap();
+        MutablePair<String, String> countryLanguage = determineCountryLanguage(
+            resourcePath,
+            homePagePath,
+            parent);
 
         int lastIndexOfSlash = resourcePath.lastIndexOf("/");
         String nodeName = resourcePath.substring(lastIndexOfSlash + 1);
 
-        searchPredicates.put("nodename", nodeName);
-        searchPredicates.put("type", "cq:Page");
-        searchPredicates.put("path", parent.getPath());
+        List<Hit> hits;
+        if (countryLanguage != null) {
+            LOG.debug(
+                "Country/Language for {}, {}, {} is {}",
+                resourcePath,
+                homePagePath,
+                parent.getPath(),
+                countryLanguage.toString());
 
-        Session session = resourceResolver.adaptTo(Session.class);
-        Query query = queryBuilder.createQuery(PredicateGroup.create(searchPredicates), session);
-
-        SearchResult searchResult = query.getResult();
-        List<Hit> hits = searchResult.getHits();
+            hits = searchNodeName(
+                nodeName,
+                parent.getPath() + "/" + countryLanguage.getKey() + "/" + countryLanguage.getValue(),
+                resourceResolver);
+        } else {
+            hits = searchNodeName(nodeName, parent.getPath(), resourceResolver);
+        }
 
         if (hits.isEmpty()) {
             return null;
@@ -215,22 +226,6 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         }
 
         if (filteredHits.size() > 1) {
-            MutablePair<String, String> countryLanguage = determineCountryLanguage(
-                resourcePath,
-                host,
-                protocol,
-                parent,
-                resourceResolver);
-
-            if (countryLanguage != null) {
-                for (Hit hit : filteredHits) {
-                    if (hit.getPath().contains("/" + countryLanguage.getKey() + "/")
-                        && hit.getPath().contains("/" + countryLanguage.getValue())) {
-                        
-                        return hit.getPath();
-                    }
-                }
-            }
             LOG.warn("Found more than one page with path {}, skipping score sync.", resourcePath);
             return null;
         }
@@ -238,15 +233,29 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         return Iterables.getOnlyElement(filteredHits).getPath();
     }
 
+    private List<Hit> searchNodeName(
+        final String nodeName,
+        final String parentPath,
+        final ResourceResolver resourceResolver) {
+
+        Map<String, String> searchPredicates = Maps.newHashMap();
+        searchPredicates.put("nodename", nodeName);
+        searchPredicates.put("type", "cq:Page");
+        searchPredicates.put("path", parentPath);
+
+        Session session = resourceResolver.adaptTo(Session.class);
+        Query query = queryBuilder.createQuery(PredicateGroup.create(searchPredicates), session);
+
+        SearchResult searchResult = query.getResult();
+        return searchResult.getHits();
+    }
+
     private MutablePair<String, String> determineCountryLanguage(
         final String resourcePath,
-        final String host,
-        final String protocol,
-        final Resource parent,
-        final ResourceResolver resourceResolver) {
+        final String homePagePath,
+        final Resource parent) {
         List<MutablePair<String, String>> countryLanguageList = buildCountryLanguageList(parent);
 
-        String homePagePath = determinePathFromSlingMap(host, protocol, resourceResolver, true);
         MutablePair<String, String> homeCountryLanguage = null;
 
         for (MutablePair<String, String> countryLanguage : countryLanguageList) {
