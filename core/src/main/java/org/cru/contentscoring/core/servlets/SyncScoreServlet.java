@@ -5,6 +5,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.sling.SlingServlet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.cru.contentscoring.core.service.SyncScoreService;
@@ -17,7 +18,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @SlingServlet(
-    paths = {"/bin/content-scoring/sync"},
+    resourceTypes = "cq/Page",
+    methods = "POST",
+    selectors = "scoring.sync",
     metatype = true
 )
 public class SyncScoreServlet extends SlingAllMethodsServlet {
@@ -46,23 +49,14 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
             return;
         }
 
-        final String resourcePath = request.getParameter("resourceUri[pathname]");
-        final String resourceHost = request.getParameter("resourceUri[hostname]");
-        final String resourceProtocol = request.getParameter("resourceUri[protocol]");
-
-        if (resourceHost == null || resourcePath == null || resourceProtocol == null) {
-            response.sendError(400, "Invalid resource URI");
-            return;
-        }
+        final Resource currentResource = request.getResource();
 
         executor.submit(() -> {
-            try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)){
+            try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)) {
                 syncScoreService.syncScore(
                     resourceResolver,
                     score,
-                    resourcePath,
-                    resourceHost,
-                    resourceProtocol.replace(":", ""));
+                    currentResource);
             } catch (Exception e) {
                 LOG.error("Failed to sync score from scale-of-belief-lambda", e);
             }
