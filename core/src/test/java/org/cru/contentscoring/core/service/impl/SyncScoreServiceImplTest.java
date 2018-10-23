@@ -338,7 +338,6 @@ public class SyncScoreServiceImplTest {
         SearchResult searchResult = mock(SearchResult.class);
         when(searchResult.getHits()).thenReturn(Lists.newArrayList(hits));
         when(query.getResult()).thenReturn(searchResult);
-        when(query.getResult()).thenReturn(searchResult);
     }
 
     private void mockForUpdateScore(final Map<String, Object> propertyMap) throws Exception {
