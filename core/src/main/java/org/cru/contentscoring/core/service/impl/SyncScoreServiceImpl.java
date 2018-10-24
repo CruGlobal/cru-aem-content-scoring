@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 
 @Component
@@ -43,11 +41,8 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 node.setProperty("score", Integer.toString(score));
 
                 Calendar now = Calendar.getInstance();
-                ZonedDateTime zonedNow = ZonedDateTime.ofInstant(now.toInstant(), now.getTimeZone().toZoneId());
 
-                node.setProperty(
-                    ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED,
-                    zonedNow.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                node.setProperty(ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED, now);
                 node.setProperty("cq:lastModified", now);
                 node.setProperty("cq:lastModifiedBy", "scale-of-belief");
                 Session session = resourceResolver.adaptTo(Session.class);
