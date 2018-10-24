@@ -24,15 +24,16 @@ public class SyncScoreServiceImpl implements SyncScoreService {
         final int score,
         final Resource resource) throws RepositoryException {
 
-        updateScore(resourceResolver, score, resource);
+        // I can't use resource here because the resource resolver inside of resource is already closed.
+        updateScore(resourceResolver, score, resourceResolver.getResource(resource.getPath()));
     }
 
     private void updateScore(
         final ResourceResolver resourceResolver,
         final int score,
         final Resource resource) throws RepositoryException {
-        // I can't use resource.getChild() here because the resource resolver inside of resource is already closed.
-        Resource contentResource = resourceResolver.getResource(resource.getPath()).getChild("jcr:content");
+
+        Resource contentResource = resource.getChild("jcr:content");
 
         if (contentResource != null) {
             Node node = contentResource.adaptTo(Node.class);
