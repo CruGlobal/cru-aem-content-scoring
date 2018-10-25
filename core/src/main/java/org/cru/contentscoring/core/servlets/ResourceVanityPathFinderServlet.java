@@ -29,7 +29,7 @@ import java.util.Map;
  * This servlet is good for finding resource paths for home pages and vanity URLs that don't end with an extension.
  */
 @SlingServlet(
-    paths = "/bin/path/finder",
+    paths = "/bin/cru/path/finder",
     metatype = true
 )
 public class ResourceVanityPathFinderServlet extends SlingSafeMethodsServlet {
