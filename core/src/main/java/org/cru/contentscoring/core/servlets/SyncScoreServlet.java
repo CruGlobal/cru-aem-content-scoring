@@ -73,7 +73,8 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
                     .setHost(uri.getHost())
                     .build()
                     .toString();
-                pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder")
+                LOG.debug("Calling {} with path {}", serverUri + "/bin/cru/path/finder.html", incomingUri);
+                pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder.html")
                     .queryParam("path", incomingUri)
                     .request()
                     .get();

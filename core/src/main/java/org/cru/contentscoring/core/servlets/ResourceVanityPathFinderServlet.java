@@ -44,6 +44,7 @@ public class ResourceVanityPathFinderServlet extends SlingSafeMethodsServlet {
         final SlingHttpServletResponse response) throws IOException {
 
         String incomingPath = request.getParameter("path");
+        LOG.debug("Incoming path: {}", incomingPath);
         ResourceResolver resourceResolver = request.getResourceResolver();
         try {
             ResolverRequest resolverRequest = new ResolverRequest(request, incomingPath);
@@ -51,6 +52,7 @@ public class ResourceVanityPathFinderServlet extends SlingSafeMethodsServlet {
 
             // This will be the case if resourceResolver found a vanity path (e.g. ministry designation pages)
             if (resource instanceof NonExistingResource) {
+                LOG.debug("Resource is non-existing, looking at vanity paths.");
                 Resource parent = resourceResolver.resolve("/content");
 
                 try {
@@ -64,6 +66,7 @@ public class ResourceVanityPathFinderServlet extends SlingSafeMethodsServlet {
                     return;
                 }
             }
+            LOG.debug("Returning {}", resource.getPath());
             response.getWriter().write(resource.getPath());
         } catch (URISyntaxException e) {
             response.sendError(400, "Invalid URI");
