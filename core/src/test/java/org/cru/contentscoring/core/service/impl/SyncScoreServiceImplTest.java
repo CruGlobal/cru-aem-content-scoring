@@ -63,7 +63,7 @@ public class SyncScoreServiceImplTest {
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(resource, propertyMap);
 
-        syncScoreService.syncScore(resourceResolver, SCORE, resource);
+        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH);
 
         assertSuccessful(propertyMap);
     }
@@ -79,6 +79,10 @@ public class SyncScoreServiceImplTest {
         doAnswer(setProperty(propertyMap)).when(contentNode).setProperty(anyString(), any(Calendar.class));
 
         when(jcrContent.adaptTo(Node.class)).thenReturn(contentNode);
+
+        Node pageNode = mock(Node.class);
+        when(resource.adaptTo(Node.class)).thenReturn(pageNode);
+        doAnswer(setProperty(propertyMap)).when(pageNode).setProperty(anyString(), any(Boolean.class));
     }
 
     private Answer<Property> setProperty(final Map<String, Object> propertyMap) {

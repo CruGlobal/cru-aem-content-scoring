@@ -22,10 +22,14 @@ public class SyncScoreServiceImpl implements SyncScoreService {
     public void syncScore(
         final ResourceResolver resourceResolver,
         final int score,
-        final Resource resource) throws RepositoryException {
+        final String resourcePath) throws RepositoryException {
 
-        // I can't use resource here because the resource resolver inside of resource is already closed.
-        updateScore(resourceResolver, score, resourceResolver.getResource(resource.getPath()));
+        Resource resource = resourceResolver.getResource(resourcePath);
+
+        if (resource == null) {
+            return;
+        }
+        updateScore(resourceResolver, score, resource);
     }
 
     private void updateScore(
