@@ -12,6 +12,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.event.jobs.Job;
 import org.apache.sling.event.jobs.consumer.JobConsumer;
+import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,14 @@ public class IndexerJobConsumer implements JobConsumer {
     @Reference
     private ContentScoreUpdateService service;
 
+    @Reference
+    private SlingSettingsService slingSettingsService;
+
     public JobResult process(final Job job) {
+        if (!slingSettingsService.getRunModes().contains("author")) {
+            return JobResult.CANCEL;
+        }
+
         ReplicationAction action = (ReplicationAction) job.getProperty(ReplicationEventHandler.EVENT_PARAM);
 
         try (ResourceResolver resourceResolver = resolverFactory.getServiceResourceResolver(null)) {
