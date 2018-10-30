@@ -1,6 +1,7 @@
 package org.cru.contentscoring.core.servlets;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.sling.SlingServlet;
 import org.apache.http.client.utils.URIBuilder;
@@ -82,7 +83,7 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
 
             resourcePath = pathFinderResponse.readEntity(String.class);
 
-            if (resourcePath == null || !resourcePath.startsWith("/")) {
+            if (Strings.isNullOrEmpty(resourcePath) || !resourcePath.startsWith("/")) {
                 LOG.warn("Resource path not found");
                 return;
             }
