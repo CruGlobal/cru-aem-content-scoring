@@ -61,7 +61,7 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
             // We're only scoring html pages
             if (incomingUri.endsWith(".html")) {
                 incomingUri = incomingUri.replace(".html", "");
-                pathFinderResponse = client.target(incomingUri + ".find.path.html")
+                pathFinderResponse = client.target(incomingUri + ".find.path.txt")
                     .request()
                     .get();
             } else {
@@ -73,8 +73,8 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
                     .setHost(uri.getHost())
                     .build()
                     .toString();
-                LOG.debug("Calling {} with path {}", serverUri + "/bin/cru/path/finder.html", incomingUri);
-                pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder.html")
+                LOG.debug("Calling {} with path {}", serverUri + "/bin/cru/path/finder.txt", incomingUri);
+                pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder.txt")
                     .queryParam("path", incomingUri)
                     .request()
                     .get();
