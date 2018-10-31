@@ -62,34 +62,8 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
         String resourcePath;
         Client client = ClientBuilder.newBuilder().build();
         try {
-            Response pathFinderResponse;
-
-            // We're only scoring html pages
-            if (incomingUri.endsWith(".html")) {
-                incomingUri = incomingUri.replace(".html", "");
-                pathFinderResponse = client.target(incomingUri + ".find.path.txt")
-                    .request()
-                    .get();
-            } else {
-                URI uri = new URI(incomingUri);
-                // This should be the load-balanced URL (e.g. https://www.cru.org), but could be a publisher URL.
-                String serverUri = new URIBuilder()
-                    .setScheme(uri.getScheme())
-                    .setPort(uri.getPort())
-                    .setHost(uri.getHost())
-                    .build()
-                    .toString();
-                LOG.debug("Calling {} with path {}", serverUri + "/bin/cru/path/finder.txt", incomingUri);
-                pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder.txt")
-                    .queryParam("path", incomingUri)
-                    .request()
-                    .get();
-            }
-
-            resourcePath = pathFinderResponse.readEntity(String.class);
-
-            if (Strings.isNullOrEmpty(resourcePath) || !resourcePath.startsWith("/")) {
-                LOG.warn("Resource path not found");
+            resourcePath = determineResourcePath(client, incomingUri);
+            if (resourcePath == null) {
                 return;
             }
         } catch (URISyntaxException e) {
@@ -111,6 +85,40 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
                 LOG.error("Failed to sync score from scale-of-belief-lambda", e);
             }
         });
+    }
+
+    @VisibleForTesting
+    String determineResourcePath(final Client client, final String incomingUri) throws URISyntaxException {
+        Response pathFinderResponse;
+
+        // We're only scoring html pages
+        if (incomingUri.endsWith(".html")) {
+            pathFinderResponse = client.target(incomingUri.replace(".html", "") + ".find.path.txt")
+                .request()
+                .get();
+        } else {
+            URI uri = new URI(incomingUri);
+            // This should be the load-balanced URL (e.g. https://www.cru.org), but could be a publisher URL.
+            String serverUri = new URIBuilder()
+                .setScheme(uri.getScheme())
+                .setPort(uri.getPort())
+                .setHost(uri.getHost())
+                .build()
+                .toString();
+            LOG.debug("Calling {} with path {}", serverUri + "/bin/cru/path/finder.txt", incomingUri);
+            pathFinderResponse = client.target(serverUri + "/bin/cru/path/finder.txt")
+                .queryParam("path", incomingUri)
+                .request()
+                .get();
+        }
+
+        String resourcePath = pathFinderResponse.readEntity(String.class);
+
+        if (Strings.isNullOrEmpty(resourcePath) || !resourcePath.startsWith("/")) {
+            LOG.warn("Resource path not found");
+            return null;
+        }
+        return resourcePath;
     }
 
     @VisibleForTesting
