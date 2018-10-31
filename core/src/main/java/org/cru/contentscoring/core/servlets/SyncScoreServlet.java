@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @SlingServlet(
-    paths = "/bin/content-scoring/sync",
+    paths = "/bin/cru/content-scoring/sync",
     metatype = true
 )
 public class SyncScoreServlet extends SlingAllMethodsServlet {
