@@ -1,16 +1,22 @@
 package org.cru.contentscoring.core.servlets;
 
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collection;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(Parameterized.class)
 public class SyncScoreServletTest {
@@ -47,5 +53,19 @@ public class SyncScoreServletTest {
     @Test
     public void testValidScore() {
         assertThat(syncScoreServlet.scoreIsValid(validScore), is(equalTo(true)));
+    }
+
+    @Test
+    public void testMobileAppIsSkipped() throws Exception {
+        SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
+        SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
+
+        when(request.getParameter("resourceUri[href]")).thenReturn("someapp://some/path");
+        when(request.getParameter("score")).thenReturn("8");
+        try {
+            syncScoreServlet.doPost(request, response);
+        } catch (MalformedURLException e) {
+            fail();
+        }
     }
 }

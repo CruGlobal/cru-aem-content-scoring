@@ -54,6 +54,11 @@ public class SyncScoreServlet extends SlingAllMethodsServlet {
         }
 
         String incomingUri = request.getParameter("resourceUri[href]");
+        if (!incomingUri.startsWith("http")) {
+            LOG.debug("Non web URI came in. This is not an AEM property, so skip sync.");
+            return;
+        }
+
         String resourcePath;
         Client client = ClientBuilder.newBuilder().build();
         try {
