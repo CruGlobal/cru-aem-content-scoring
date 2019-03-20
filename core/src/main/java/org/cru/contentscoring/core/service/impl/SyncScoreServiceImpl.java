@@ -1,5 +1,8 @@
 package org.cru.contentscoring.core.service.impl;
 
+import com.day.cq.tagging.Tag;
+import com.day.cq.tagging.TagManager;
+import com.google.common.collect.Lists;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.Resource;
@@ -10,13 +13,15 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
-import javax.jcr.Session;
 import java.util.Calendar;
+import java.util.List;
 
 @Component
 @Service(SyncScoreService.class)
 public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
+
+    static final String SCALE_OF_BELIEF_TAG_PREFIX = "target-audience:scale-of-belief/";
 
     @Override
     public void syncScore(
@@ -50,12 +55,34 @@ public class SyncScoreServiceImpl implements SyncScoreService {
                 node.setProperty(ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED, now);
                 node.setProperty("cq:lastModified", now);
                 node.setProperty("cq:lastModifiedBy", "scale-of-belief");
-                Session session = resourceResolver.adaptTo(Session.class);
 
-                if (session != null) {
-                    session.save();
-                }
+                TagManager tagManager = resourceResolver.adaptTo(TagManager.class);
+                List<Tag> newTags = buildTagsWithScore(contentResource, tagManager, score);
+                tagManager.setTags(contentResource, newTags.toArray(new Tag[0]));
             }
         }
+    }
+
+    private List<Tag> buildTagsWithScore(
+        final Resource contentResource,
+        final TagManager tagManager,
+        final int score) {
+
+        Tag[] existingTags = tagManager.getTags(contentResource);
+        List<Tag> newTags = Lists.newArrayList();
+
+        for (Tag existingTag : existingTags) {
+            if (existingTag.getTagID().startsWith(SCALE_OF_BELIEF_TAG_PREFIX)) {
+                continue;
+            }
+            newTags.add(existingTag);
+        }
+
+        Tag scoreTag = tagManager.resolve(SCALE_OF_BELIEF_TAG_PREFIX + score);
+        if (scoreTag != null) {
+            newTags.add(scoreTag);
+        }
+
+        return newTags;
     }
 }

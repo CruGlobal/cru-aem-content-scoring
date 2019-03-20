@@ -1,5 +1,7 @@
 package org.cru.contentscoring.core.service.impl;
 
+import com.day.cq.tagging.Tag;
+import com.day.cq.tagging.TagManager;
 import com.day.crx.JcrConstants;
 import com.google.common.collect.Maps;
 import org.apache.sling.api.resource.Resource;
@@ -18,12 +20,15 @@ import javax.jcr.Session;
 import java.util.Calendar;
 import java.util.Map;
 
+import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.AdditionalMatchers.aryEq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -37,6 +42,9 @@ public class SyncScoreServiceImplTest {
 
     @Mock
     private ResourceResolver resourceResolver;
+
+    @Mock
+    private TagManager tagManager;
 
     @Mock
     private Session session;
@@ -53,19 +61,71 @@ public class SyncScoreServiceImplTest {
         doNothing().when(session).save();
 
         when(jcrContent.getName()).thenReturn(JcrConstants.JCR_CONTENT);
+        when(resourceResolver.adaptTo(TagManager.class)).thenReturn(tagManager);
     }
 
     @Test
     public void testScoreIsSynced() throws Exception {
         Resource resource = mock(Resource.class);
         when(resourceResolver.getResource(ABSOLUTE_PATH)).thenReturn(resource);
+        when(tagManager.getTags(jcrContent)).thenReturn(new Tag[0]);
+
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SCALE_OF_BELIEF_TAG_PREFIX + SCORE);
+        when(tagManager.resolve(SCALE_OF_BELIEF_TAG_PREFIX + SCORE)).thenReturn(scoreTag);
 
         Map<String, Object> propertyMap = Maps.newHashMap();
         mockForUpdateScore(resource, propertyMap);
 
         syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH);
 
-        assertSuccessful(propertyMap);
+        assertSuccessful(propertyMap, new Tag[] { scoreTag });
+    }
+
+    @Test
+    public void testScoreIsSyncedWithExistingTags() throws Exception {
+        Resource resource = mock(Resource.class);
+        when(resourceResolver.getResource(ABSOLUTE_PATH)).thenReturn(resource);
+
+        Tag existingTag = mock(Tag.class);
+        when(existingTag.getTagID()).thenReturn("namespace:someTag/1");
+        when(tagManager.getTags(jcrContent)).thenReturn(new Tag[] { existingTag });
+
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SCALE_OF_BELIEF_TAG_PREFIX + SCORE);
+        when(tagManager.resolve(SCALE_OF_BELIEF_TAG_PREFIX + SCORE)).thenReturn(scoreTag);
+
+        Map<String, Object> propertyMap = Maps.newHashMap();
+        mockForUpdateScore(resource, propertyMap);
+
+        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH);
+
+        assertSuccessful(propertyMap, new Tag[] { existingTag, scoreTag });
+    }
+
+    @Test
+    public void testScoreIsSyncedWithExistingTagsAndPriorScoreTag() throws Exception {
+        Resource resource = mock(Resource.class);
+        when(resourceResolver.getResource(ABSOLUTE_PATH)).thenReturn(resource);
+
+        Tag existingTag = mock(Tag.class);
+        when(existingTag.getTagID()).thenReturn("namespace:someTag/1");
+
+        Tag existingScoreTag = mock(Tag.class);
+        when(existingScoreTag.getTagID()).thenReturn(SCALE_OF_BELIEF_TAG_PREFIX + 2);
+
+        when(tagManager.getTags(jcrContent)).thenReturn(new Tag[] { existingTag, existingScoreTag });
+
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SCALE_OF_BELIEF_TAG_PREFIX + SCORE);
+        when(tagManager.resolve(SCALE_OF_BELIEF_TAG_PREFIX + SCORE)).thenReturn(scoreTag);
+
+        Map<String, Object> propertyMap = Maps.newHashMap();
+        mockForUpdateScore(resource, propertyMap);
+
+        syncScoreService.syncScore(resourceResolver, SCORE, ABSOLUTE_PATH);
+
+        assertSuccessful(propertyMap, new Tag[] { existingTag, scoreTag });
     }
 
     private void mockForUpdateScore(final Resource resource, final Map<String, Object> propertyMap) throws Exception {
@@ -92,12 +152,12 @@ public class SyncScoreServiceImplTest {
         };
     }
 
-    private void assertSuccessful(final Map<String, Object> propertyMap) throws Exception {
+    private void assertSuccessful(final Map<String, Object> propertyMap, final Tag[] tags) {
         assertThat(propertyMap.get("score"), is(equalTo(Integer.toString(SCORE))));
         assertThat(propertyMap.get("cq:lastModifiedBy"), is(equalTo("scale-of-belief")));
         assertThat(propertyMap.get("cq:lastModified"), is(notNullValue()));
         assertThat(propertyMap.get("contentScoreLastUpdated"), is(notNullValue()));
 
-        verify(session).save();
+        verify(tagManager).setTags(eq(jcrContent), aryEq(tags));
     }
 }
