@@ -1,6 +1,10 @@
 package org.cru.contentscoring.core.servlets;
 
 import com.day.cq.commons.jcr.JcrConstants;
+import com.day.cq.replication.ReplicationActionType;
+import com.day.cq.replication.ReplicationException;
+import com.day.cq.replication.ReplicationOptions;
+import com.day.cq.replication.Replicator;
 import com.day.cq.search.Predicate;
 import com.day.cq.search.SimpleSearch;
 import com.day.cq.search.result.Hit;
@@ -9,16 +13,20 @@ import com.day.cq.tagging.Tag;
 import com.day.cq.tagging.TagManager;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.sling.SlingServlet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+import org.apache.sling.settings.SlingSettingsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Arrays;
@@ -33,6 +41,12 @@ import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCAL
 )
 public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(CopyScoresToTagsServlet.class);
+
+    @Reference
+    private SlingSettingsService slingSettingsService;
+
+    @Reference
+    private Replicator replicator;
 
     @Override
     protected void doPut(final SlingHttpServletRequest request, final SlingHttpServletResponse response)
@@ -53,19 +67,20 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
             return;
         }
 
-        Resource root = request.getResourceResolver().getResource(path);
+        ResourceResolver resourceResolver = request.getResourceResolver();
+        Resource root = resourceResolver.getResource(path);
         if (root == null) {
             response.sendError(400, "Invalid path");
             return;
         }
 
-        TagManager tagManager = request.getResourceResolver().adaptTo(TagManager.class);
+        TagManager tagManager = resourceResolver.adaptTo(TagManager.class);
 
         List<Hit> results = findPagesWithScoreProperty(root);
 
         try {
-            moveScoresToTags(results, tagManager);
-        } catch (RepositoryException e) {
+            moveScoresToTags(results, tagManager, resourceResolver);
+        } catch (RepositoryException | ReplicationException e) {
             LOG.error(e.getMessage());
             response.sendError(500, e.getMessage());
         }
@@ -101,10 +116,18 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         return typePredicate;
     }
 
-    private void moveScoresToTags(final List<Hit> results, final TagManager tagManager) throws RepositoryException {
+    private void moveScoresToTags(
+        final List<Hit> results,
+        final TagManager tagManager,
+        final ResourceResolver resourceResolver) throws RepositoryException, ReplicationException {
+
+        List<Resource> pages = Lists.newArrayList();
         for (Hit result : results) {
             moveScoreToTag(result.getResource(), tagManager);
+            pages.add(result.getResource());
         }
+
+        replicatePages(pages, resourceResolver);
     }
 
     private void moveScoreToTag(final Resource page, final TagManager tagManager) throws RepositoryException {
@@ -148,5 +171,27 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         }
 
         return newTags;
+    }
+
+    private void replicatePages(final List<Resource> pages, final ResourceResolver resourceResolver)
+        throws ReplicationException {
+
+        if (slingSettingsService.getRunModes().contains("author")) {
+            Session session = resourceResolver.adaptTo(Session.class);
+
+            List<String> pathsToReplicate = Lists.newArrayList();
+            for (Resource page : pages) {
+                // Only replicate pages that have already been replicated
+                if (replicator.getReplicationStatus(session, page.getPath()).isActivated()) {
+                    pathsToReplicate.add(page.getPath());
+                }
+            }
+
+            replicator.replicate(
+                session,
+                ReplicationActionType.ACTIVATE,
+                pathsToReplicate.toArray(new String[]{}),
+                new ReplicationOptions());
+        }
     }
 }
