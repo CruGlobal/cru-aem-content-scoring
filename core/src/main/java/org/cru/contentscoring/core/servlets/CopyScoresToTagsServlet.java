@@ -187,6 +187,10 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
                 }
             }
 
+            if (pathsToReplicate.isEmpty()) {
+                return;
+            }
+
             replicator.replicate(
                 session,
                 ReplicationActionType.ACTIVATE,
