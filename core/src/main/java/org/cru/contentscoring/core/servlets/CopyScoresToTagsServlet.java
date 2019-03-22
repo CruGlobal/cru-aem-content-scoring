@@ -74,7 +74,8 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private List<Hit> findPagesWithScoreProperty(final Resource root) {
         SimpleSearch search = root.adaptTo(SimpleSearch.class);
         search.addPredicate(buildScorePredicate());
-        search.addPredicate(buildRootPathPredicate(root.getPath()));
+        search.addPredicate(buildTypePredicate());
+        search.setSearchIn(root.getPath());
 
         try {
             SearchResult searchResult = search.getResult();
@@ -92,11 +93,10 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         return scorePredicate;
     }
 
-    private Predicate buildRootPathPredicate(final String rootPath) {
-        Predicate rootPathPredicate = new Predicate("rootPath", "path");
-        rootPathPredicate.set("path", rootPath);
-        rootPathPredicate.set("self", "true");
-        return rootPathPredicate;
+    private Predicate buildTypePredicate() {
+        Predicate typePredicate = new Predicate("type", "type");
+        typePredicate.set("type", "cq:Page");
+        return typePredicate;
     }
 
     private void moveScoresToTags(final List<Hit> results, final TagManager tagManager) throws RepositoryException {
