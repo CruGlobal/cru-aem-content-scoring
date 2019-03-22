@@ -76,9 +76,11 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         search.addPredicate(buildScorePredicate());
         search.addPredicate(buildTypePredicate());
         search.setSearchIn(root.getPath());
+        search.setHitsPerPage(0L); // 0 means unlimited
 
         try {
             SearchResult searchResult = search.getResult();
+            LOG.debug("Search took {} seconds", searchResult.getExecutionTime());
             return searchResult.getHits();
         } catch (RepositoryException e) {
             LOG.error("Failed to search for pages with a score property under path {}", root.getPath(), e);
