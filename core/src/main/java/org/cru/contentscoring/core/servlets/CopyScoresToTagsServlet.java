@@ -44,6 +44,8 @@ import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCAL
 public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(CopyScoresToTagsServlet.class);
 
+    private static final String PRIMARY_XF_NAME = "primaryExperienceFragment";
+
     @Reference
     private SlingSettingsService slingSettingsService;
 
@@ -125,8 +127,10 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
 
         List<Resource> pages = Lists.newArrayList();
         for (Hit result : results) {
-            moveScoreToTag(result.getResource(), tagManager);
-            pages.add(result.getResource());
+            Resource page = result.getResource();
+            copyScoreTagToPrimaryExperienceFragment(page, resourceResolver, tagManager);
+            moveScoreToTag(page, tagManager);
+            pages.add(page);
         }
 
         replicatePages(pages, resourceResolver);
@@ -141,6 +145,29 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
 
             Set<Tag> tags = buildTagsWithScore(pageContent, tagManager, score);
             tagManager.setTags(pageContent, tags.toArray(new Tag[0]));
+        }
+    }
+
+    private void copyScoreTagToPrimaryExperienceFragment(
+        final Resource page,
+        final ResourceResolver resourceResolver,
+        final TagManager tagManager) {
+
+        Resource pageContent = getJcrContent(page);
+
+        if (pageContent != null) {
+            String score = pageContent.getValueMap().get("score", String.class);
+            String primaryExperienceFragmentPath = pageContent.getValueMap().get(PRIMARY_XF_NAME, String.class);
+
+            if (!Strings.isNullOrEmpty(primaryExperienceFragmentPath)) {
+                Resource experienceFragment = resourceResolver.getResource(primaryExperienceFragmentPath);
+
+                if (experienceFragment != null) {
+                    Resource experienceFragmentContent = getJcrContent(experienceFragment);
+                    Set<Tag> tags = buildTagsWithScore(experienceFragmentContent, tagManager, score);
+                    tagManager.setTags(experienceFragmentContent, tags.toArray(new Tag[0]));
+                }
+            }
         }
     }
 
