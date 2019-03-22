@@ -13,6 +13,7 @@ import com.day.cq.tagging.Tag;
 import com.day.cq.tagging.TagManager;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.sling.SlingServlet;
 import org.apache.sling.api.SlingHttpServletRequest;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX;
 
@@ -137,7 +139,7 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
             String score = pageContent.getValueMap().get("score", String.class);
             pageContent.adaptTo(Node.class).getProperty("score").remove();
 
-            List<Tag> tags = buildTagsWithScore(pageContent, tagManager, score);
+            Set<Tag> tags = buildTagsWithScore(pageContent, tagManager, score);
             tagManager.setTags(pageContent, tags.toArray(new Tag[0]));
         }
     }
@@ -149,18 +151,18 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         return null;
     }
 
-    private List<Tag> buildTagsWithScore(
+    private Set<Tag> buildTagsWithScore(
         final Resource contentResource,
         final TagManager tagManager,
         final String score) {
 
         Tag[] existingTags = tagManager.getTags(contentResource);
-        List<Tag> newTags = Lists.newArrayList();
+        Set<Tag> newTags = Sets.newHashSet();
 
         for (Tag existingTag : existingTags) {
             // If there is already a score tag on this resource, prefer it over the property.
             if (existingTag.getTagID().startsWith(SCALE_OF_BELIEF_TAG_PREFIX)) {
-                return Arrays.asList(existingTags);
+                return Sets.newHashSet(Arrays.asList(existingTags));
             }
             newTags.add(existingTag);
         }
