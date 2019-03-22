@@ -17,6 +17,7 @@ import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.io.IOException;
 import java.security.Principal;
@@ -63,7 +64,7 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         List<Hit> results = findPagesWithScoreProperty(root);
 
         try {
-            copyScoresToTags(results, tagManager);
+            moveScoresToTags(results, tagManager);
         } catch (RepositoryException e) {
             LOG.error(e.getMessage());
             response.sendError(500, e.getMessage());
@@ -98,17 +99,19 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         return rootPathPredicate;
     }
 
-    private void copyScoresToTags(final List<Hit> results, final TagManager tagManager) throws RepositoryException {
+    private void moveScoresToTags(final List<Hit> results, final TagManager tagManager) throws RepositoryException {
         for (Hit result : results) {
-            copyScoreToTag(result.getResource(), tagManager);
+            moveScoreToTag(result.getResource(), tagManager);
         }
     }
 
-    private void copyScoreToTag(final Resource page, final TagManager tagManager) {
+    private void moveScoreToTag(final Resource page, final TagManager tagManager) throws RepositoryException {
         Resource pageContent = getJcrContent(page);
 
         if (pageContent != null) {
             String score = pageContent.getValueMap().get("score", String.class);
+            pageContent.adaptTo(Node.class).getProperty("score").remove();
+
             List<Tag> tags = buildTagsWithScore(pageContent, tagManager, score);
             tagManager.setTags(pageContent, tags.toArray(new Tag[0]));
         }
