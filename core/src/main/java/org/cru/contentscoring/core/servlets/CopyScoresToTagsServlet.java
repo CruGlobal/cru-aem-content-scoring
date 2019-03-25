@@ -87,7 +87,7 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         try {
             moveScoresToTags(results, tagManager, resourceResolver);
         } catch (RepositoryException | ReplicationException e) {
-            LOG.error(e.getMessage());
+            LOG.error(e.getMessage(), e);
             response.sendError(500, e.getMessage());
         }
     }
