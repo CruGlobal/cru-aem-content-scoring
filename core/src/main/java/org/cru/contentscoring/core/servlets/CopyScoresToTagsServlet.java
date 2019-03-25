@@ -141,11 +141,9 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private void moveScoreToTag(final Resource page, final TagManager tagManager) throws RepositoryException {
         Resource pageContent = getJcrContent(page);
 
-        if (pageContent != null) {
-            String score = pageContent.getValueMap().get("score", String.class);
-            pageContent.adaptTo(Node.class).getProperty("score").remove();
-            setTags(pageContent, tagManager, score);
-        }
+        String score = pageContent.getValueMap().get("score", String.class);
+        pageContent.adaptTo(Node.class).getProperty("score").remove();
+        setTags(pageContent, tagManager, score);
     }
 
     private void copyScoreTagToPrimaryExperienceFragment(
@@ -155,31 +153,29 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
 
         Resource pageContent = getJcrContent(page);
 
-        if (pageContent != null) {
-            String score = pageContent.getValueMap().get("score", String.class);
-            String primaryExperienceFragmentPath = pageContent.getValueMap().get(PRIMARY_XF_NAME, String.class);
+        String score = pageContent.getValueMap().get("score", String.class);
+        String primaryExperienceFragmentPath = pageContent.getValueMap().get(PRIMARY_XF_NAME, String.class);
 
-            if (!Strings.isNullOrEmpty(primaryExperienceFragmentPath)) {
-                Resource primaryExperienceFragment = resourceResolver.getResource(primaryExperienceFragmentPath);
-                Resource experienceFragment;
+        if (!Strings.isNullOrEmpty(primaryExperienceFragmentPath)) {
+            Resource primaryExperienceFragment = resourceResolver.getResource(primaryExperienceFragmentPath);
+            Resource experienceFragment;
 
-                if (primaryExperienceFragment != null) {
-                    if (isExperienceFragmentVariation(primaryExperienceFragment)) {
-                        experienceFragment = primaryExperienceFragment.getParent();
-                    } else if (isExperienceFragment(primaryExperienceFragment)) {
-                        experienceFragment = primaryExperienceFragment;
-                    } else {
-                        return;
-                    }
+            if (primaryExperienceFragment != null) {
+                if (isExperienceFragmentVariation(primaryExperienceFragment)) {
+                    experienceFragment = primaryExperienceFragment.getParent();
+                } else if (isExperienceFragment(primaryExperienceFragment)) {
+                    experienceFragment = primaryExperienceFragment;
+                } else {
+                    return;
+                }
 
-                    Resource experienceFragmentContent = getJcrContent(experienceFragment);
-                    setTags(experienceFragmentContent, tagManager, score);
+                Resource experienceFragmentContent = getJcrContent(experienceFragment);
+                setTags(experienceFragmentContent, tagManager, score);
 
-                    for (Resource child : experienceFragment.getChildren()) {
-                        Resource childContent = getJcrContent(child);
-                        if (childContent != null) {
-                            setTags(childContent, tagManager, score);
-                        }
+                for (Resource child : experienceFragment.getChildren()) {
+                    Resource childContent = getJcrContent(child);
+                    if (childContent != null) {
+                        setTags(childContent, tagManager, score);
                     }
                 }
             }
