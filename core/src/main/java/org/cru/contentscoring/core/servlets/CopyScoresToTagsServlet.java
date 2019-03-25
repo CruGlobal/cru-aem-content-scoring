@@ -45,6 +45,8 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(CopyScoresToTagsServlet.class);
 
     private static final String PRIMARY_XF_NAME = "primaryExperienceFragment";
+    private static final String XF_TYPE = "cq/experience-fragments/components/experiencefragment";
+    private static final String XF_VARIANT_TYPE = "cq:xfVariantType";
 
     @Reference
     private SlingSettingsService slingSettingsService;
@@ -160,12 +162,29 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
             String primaryExperienceFragmentPath = pageContent.getValueMap().get(PRIMARY_XF_NAME, String.class);
 
             if (!Strings.isNullOrEmpty(primaryExperienceFragmentPath)) {
-                Resource experienceFragment = resourceResolver.getResource(primaryExperienceFragmentPath);
+                Resource primaryExperienceFragment = resourceResolver.getResource(primaryExperienceFragmentPath);
+                Resource experienceFragment;
 
-                if (experienceFragment != null) {
+                if (primaryExperienceFragment != null) {
+                    if (isExperienceFragmentVariation(primaryExperienceFragment)) {
+                        experienceFragment = primaryExperienceFragment.getParent();
+                    } else if (isExperienceFragment(primaryExperienceFragment)) {
+                        experienceFragment = primaryExperienceFragment;
+                    } else {
+                        return;
+                    }
+
                     Resource experienceFragmentContent = getJcrContent(experienceFragment);
                     Set<Tag> tags = buildTagsWithScore(experienceFragmentContent, tagManager, score);
                     tagManager.setTags(experienceFragmentContent, tags.toArray(new Tag[0]));
+
+                    for (Resource child : experienceFragment.getChildren()) {
+                        Resource childContent = getJcrContent(child);
+                        if (childContent != null) {
+                            Set<Tag> childTags = buildTagsWithScore(childContent, tagManager, score);
+                            tagManager.setTags(childContent, childTags.toArray(new Tag[0]));
+                        }
+                    }
                 }
             }
         }
@@ -226,5 +245,15 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
                 pathsToReplicate.toArray(new String[]{}),
                 new ReplicationOptions());
         }
+    }
+
+    private boolean isExperienceFragment(final Resource resource) {
+        Resource jcrContent = getJcrContent(resource);
+        return jcrContent != null && jcrContent.getResourceType().equals(XF_TYPE);
+    }
+
+    private boolean isExperienceFragmentVariation(final Resource resource) {
+        Resource jcrContent = getJcrContent(resource);
+        return jcrContent != null && jcrContent.getValueMap().containsKey(XF_VARIANT_TYPE);
     }
 }
