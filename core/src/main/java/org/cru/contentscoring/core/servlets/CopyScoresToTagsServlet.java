@@ -144,9 +144,7 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
         if (pageContent != null) {
             String score = pageContent.getValueMap().get("score", String.class);
             pageContent.adaptTo(Node.class).getProperty("score").remove();
-
-            Set<Tag> tags = buildTagsWithScore(pageContent, tagManager, score);
-            tagManager.setTags(pageContent, tags.toArray(new Tag[0]));
+            setTags(pageContent, tagManager, score);
         }
     }
 
@@ -175,14 +173,12 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
                     }
 
                     Resource experienceFragmentContent = getJcrContent(experienceFragment);
-                    Set<Tag> tags = buildTagsWithScore(experienceFragmentContent, tagManager, score);
-                    tagManager.setTags(experienceFragmentContent, tags.toArray(new Tag[0]));
+                    setTags(experienceFragmentContent, tagManager, score);
 
                     for (Resource child : experienceFragment.getChildren()) {
                         Resource childContent = getJcrContent(child);
                         if (childContent != null) {
-                            Set<Tag> childTags = buildTagsWithScore(childContent, tagManager, score);
-                            tagManager.setTags(childContent, childTags.toArray(new Tag[0]));
+                            setTags(childContent, tagManager, score);
                         }
                     }
                 }
@@ -195,6 +191,11 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
             return resource.getChild(JcrConstants.JCR_CONTENT);
         }
         return null;
+    }
+
+    private void setTags(final Resource jcrContent, final TagManager tagManager, final String score) {
+        Set<Tag> childTags = buildTagsWithScore(jcrContent, tagManager, score);
+        tagManager.setTags(jcrContent, childTags.toArray(new Tag[0]));
     }
 
     private Set<Tag> buildTagsWithScore(
