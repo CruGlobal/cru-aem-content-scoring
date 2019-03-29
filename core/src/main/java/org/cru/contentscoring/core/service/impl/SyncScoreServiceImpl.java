@@ -21,7 +21,7 @@ import java.util.List;
 public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
 
-    static final String SCALE_OF_BELIEF_TAG_PREFIX = "target-audience:scale-of-belief/";
+    public static final String SCALE_OF_BELIEF_TAG_PREFIX = "target-audience:scale-of-belief/";
 
     @Override
     public void syncScore(
