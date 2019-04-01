@@ -2,6 +2,7 @@ package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.commons.Externalizer;
 import com.day.cq.mailer.MessageGatewayService;
+import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -14,7 +15,6 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
@@ -115,9 +115,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     @Override
     public void updateContentScore(final Page page) throws RepositoryException {
-        ValueMap pageProperties = page.getProperties();
-
-        int score = getScore(pageProperties);
+        int score = getScore(page);
         if (score == -1) {
             return;
         }
@@ -131,8 +129,16 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    int getScore(final ValueMap pageProperties) {
-        String scoreString = pageProperties.get("score", String.class);
+    int getScore(final Page page) {
+        String scoreString = null;
+
+        Tag[] tags = page.getTags();
+        for (Tag tag : tags) {
+            if (tag.getTagID().startsWith(SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX)) {
+                scoreString = tag.getTagID().replace(SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX, "");
+                break;
+            }
+        }
         if (scoreString == null) {
             // Score is required for update
             return -1;
