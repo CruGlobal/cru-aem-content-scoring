@@ -48,7 +48,6 @@ public class SyncScoreServiceImpl implements SyncScoreService {
             Node node = contentResource.adaptTo(Node.class);
             if (node != null) {
                 LOG.debug("Setting score on {} to {}", node.getPath(), score);
-                node.setProperty("score", Integer.toString(score));
 
                 Calendar now = Calendar.getInstance();
 

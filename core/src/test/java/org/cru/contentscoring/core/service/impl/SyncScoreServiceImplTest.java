@@ -153,7 +153,6 @@ public class SyncScoreServiceImplTest {
     }
 
     private void assertSuccessful(final Map<String, Object> propertyMap, final Tag[] tags) {
-        assertThat(propertyMap.get("score"), is(equalTo(Integer.toString(SCORE))));
         assertThat(propertyMap.get("cq:lastModifiedBy"), is(equalTo("scale-of-belief")));
         assertThat(propertyMap.get("cq:lastModified"), is(notNullValue()));
         assertThat(propertyMap.get("contentScoreLastUpdated"), is(notNullValue()));
