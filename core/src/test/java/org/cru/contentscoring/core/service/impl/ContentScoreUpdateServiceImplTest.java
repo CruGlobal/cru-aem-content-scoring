@@ -1,13 +1,13 @@
 package org.cru.contentscoring.core.service.impl;
 
 import com.day.cq.commons.Externalizer;
+import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.api.wrappers.ValueMapDecorator;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -42,13 +42,20 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ContentScoreUpdateServiceImplTest {
-    private static final String SCORE_PROPERTY = "score";
     private static final String UNAWARE_SCORE = "1";
 
     private static final Map<String, String> CONFIGURED_EXTERNALIZERS = buildExternalizers();
 
+    private Page page;
+
     @InjectMocks
     private ContentScoreUpdateServiceImpl updateService;
+
+    @Before
+    public void setup() {
+        String pagePath = "/content/test/us/en/page-path";
+        page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
+    }
 
     @Test
     public void testActivation() {
@@ -81,26 +88,26 @@ public class ContentScoreUpdateServiceImplTest {
 
     @Test
     public void testPageHasScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(SCORE_PROPERTY, UNAWARE_SCORE);
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX + UNAWARE_SCORE);
+        when(page.getTags()).thenReturn(new Tag[] {scoreTag});
 
-        assertThat(updateService.getScore(pageProperties), is(Integer.parseInt(UNAWARE_SCORE)));
+        assertThat(updateService.getScore(page), is(Integer.parseInt(UNAWARE_SCORE)));
     }
 
     @Test
     public void testPageMissingScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put("someProperty", "someValue");
-
-        assertThat(updateService.getScore(pageProperties), is(-1));
+        when(page.getTags()).thenReturn(new Tag[0]);
+        assertThat(updateService.getScore(page), is(-1));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidScore() {
-        ValueMap pageProperties = new ValueMapDecorator(Maps.newHashMap());
-        pageProperties.put(SCORE_PROPERTY, "100");
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX + 100);
+        when(page.getTags()).thenReturn(new Tag[] {scoreTag});
 
-        updateService.getScore(pageProperties);
+        updateService.getScore(page);
     }
 
     @Test
