@@ -157,7 +157,7 @@ public class ContentScoreUpdateServiceImplTest {
         Page page = mockPage(pagePath, vanityPath, "https://vanity.com/content/test/us/en/" + vanityPath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
-        String vanityUrl = updateService.getPageUrl(page);
+        String vanityUrl = updateService.getPageUrl(page, true);
         assertThat(vanityUrl, is(equalTo("https://vanity.com/" + vanityPath)));
     }
 
@@ -166,8 +166,29 @@ public class ContentScoreUpdateServiceImplTest {
         String pagePath = "/content/test/us/en/page-path";
         Page page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
 
-        String pageUrl = updateService.getPageUrl(page);
+        String pageUrl = updateService.getPageUrl(page, false);
         assertThat(pageUrl, is(equalTo("https://page.com" + pagePath + ".html")));
+    }
+
+    @Test
+    public void testSkipPageUrl() {
+        String vanityPath = "/vanity-url";
+        String pagePath = "/content/test/us/en/page-path";
+
+        Page page = mockPage(pagePath, vanityPath, "https://vanity.com/content/test/us/en/" + vanityPath);
+        when(page.getVanityUrl()).thenReturn(vanityPath);
+
+        String vanityUrl = updateService.getPageUrl(page, false);
+        assertThat(vanityUrl, is(nullValue()));
+    }
+
+    @Test
+    public void testSkipVanityUrl() {
+        String pagePath = "/content/test/us/en/page-path";
+        Page page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
+
+        String pageUrl = updateService.getPageUrl(page, true);
+        assertThat(pageUrl, is(nullValue()));
     }
 
     private Page mockPage(final String pagePath, final String externalizerPath, final String externalLink) {

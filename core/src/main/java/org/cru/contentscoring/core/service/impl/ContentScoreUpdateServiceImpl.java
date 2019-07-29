@@ -120,12 +120,19 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             return;
         }
 
-        ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
-        request.setUri(getPageUrl(page));
-        request.setScore(score);
+        handleRequest(page, getPageUrl(page, false), score); // send the real URL
+        handleRequest(page, getPageUrl(page, true), score);  // send the vanity if it has one
+    }
 
-        sendUpdateRequest(request);
-        setContentScoreUpdatedDate(page);
+    private void handleRequest(final Page page, final String pageUrl, final int score) throws RepositoryException {
+        if (pageUrl != null) {
+            ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
+            request.setUri(pageUrl);
+            request.setScore(score);
+
+            sendUpdateRequest(request);
+            setContentScoreUpdatedDate(page);
+        }
     }
 
     @VisibleForTesting
@@ -153,7 +160,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    String getPageUrl(final Page page) {
+    String getPageUrl(final Page page, final boolean useVanity) {
         String path = page.getVanityUrl();
         boolean vanityUrl = !Strings.isNullOrEmpty(path);
 
@@ -169,8 +176,10 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         String domain = publishConfiguration[1];
         String pageUrl = externalizer.externalLink(resolver, domain, path);
 
-        if (vanityUrl) {
+        if (useVanity && vanityUrl) {
             pageUrl = pageUrl.replace(publishConfiguration[0], "");
+        } else if ((!useVanity && vanityUrl) || (useVanity && !vanityUrl)) {
+            return null;
         } else {
             pageUrl += ".html";
         }
