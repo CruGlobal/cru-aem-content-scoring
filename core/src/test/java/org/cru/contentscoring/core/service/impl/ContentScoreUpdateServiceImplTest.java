@@ -3,10 +3,13 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.commons.Externalizer;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
+import org.cru.contentscoring.core.queue.UploadQueue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,6 +22,7 @@ import javax.jcr.Session;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_ENDPOINT;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED;
@@ -43,6 +47,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ContentScoreUpdateServiceImplTest {
     private static final String UNAWARE_SCORE = "1";
+    private static final String HTML_EXTENSION = ".html";
 
     private static final Map<String, String> CONFIGURED_EXTERNALIZERS = buildExternalizers();
 
@@ -52,7 +57,7 @@ public class ContentScoreUpdateServiceImplTest {
     private ContentScoreUpdateServiceImpl updateService;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         String pagePath = "/content/test/us/en/page-path";
         page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
     }
@@ -150,7 +155,7 @@ public class ContentScoreUpdateServiceImplTest {
     }
 
     @Test
-    public void testGetVanityUrl() {
+    public void testGetVanityUrl() throws Exception {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
 
@@ -162,28 +167,29 @@ public class ContentScoreUpdateServiceImplTest {
     }
 
     @Test
-    public void testGetPageUrl() {
+    public void testGetPageUrl() throws Exception {
         String pagePath = "/content/test/us/en/page-path";
         Page page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
 
         String pageUrl = updateService.getPageUrl(page, false);
-        assertThat(pageUrl, is(equalTo("https://page.com" + pagePath + ".html")));
+        assertThat(pageUrl, is(equalTo("https://page.com" + pagePath + HTML_EXTENSION)));
     }
 
     @Test
-    public void testSkipPageUrl() {
+    public void testDoNotSkipPageUrl() throws Exception {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
+        String prefix = "https://vanity.com/content/test/us/en";
 
-        Page page = mockPage(pagePath, vanityPath, "https://vanity.com/content/test/us/en/" + vanityPath);
+        Page page = mockPage(pagePath, vanityPath, prefix + vanityPath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
         String vanityUrl = updateService.getPageUrl(page, false);
-        assertThat(vanityUrl, is(nullValue()));
+        assertThat(vanityUrl, is(equalTo(prefix + vanityPath + HTML_EXTENSION)));
     }
 
     @Test
-    public void testSkipVanityUrl() {
+    public void testSkipVanityUrl() throws Exception {
         String pagePath = "/content/test/us/en/page-path";
         Page page = mockPage(pagePath, pagePath, "https://page.com" + pagePath);
 
@@ -191,12 +197,85 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(pageUrl, is(nullValue()));
     }
 
-    private Page mockPage(final String pagePath, final String externalizerPath, final String externalLink) {
+    @Test
+    public void testPageWithVanityUrlSendsBothUrls() throws Exception {
+        initializeQueue();
+        String vanityPath = "/vanity-url";
+        String pagePath = "/content/test/us/en/page-path";
+        String prefix = "https://vanity.com/content/test/us/en";
+
+        Page page = mockPage(pagePath, vanityPath, prefix + vanityPath);
+        when(page.getVanityUrl()).thenReturn(vanityPath);
+
+        updateService.updateContentScore(page);
+        List<ContentScoreUpdateRequest> pending =
+            ContentScoreUpdateServiceImpl.internalQueueManager.getPendingBatches();
+
+        assertThat(pending, is(not(nullValue())));
+        assertThat(pending.size(), is(equalTo(2)));
+
+        int correctPaths = 0;
+
+        for (ContentScoreUpdateRequest request : pending) {
+            if (request.getUri().equals("https://vanity.com" + vanityPath)
+                || request.getUri().equals(prefix + vanityPath + HTML_EXTENSION)) {
+                correctPaths++;
+            }
+        }
+
+        assertThat(correctPaths, is(equalTo(2)));
+    }
+
+    @Test
+    public void testPageWithoutVanityUrlSendsOneUrl() throws Exception {
+        initializeQueue();
+        String pagePath = "/content/test/us/en/page-path";
+        String prefix = "https://page.com";
+
+        Page page = mockPage(pagePath, pagePath, prefix + pagePath);
+
+        updateService.updateContentScore(page);
+        List<ContentScoreUpdateRequest> pending =
+            ContentScoreUpdateServiceImpl.internalQueueManager.getPendingBatches();
+
+        ContentScoreUpdateRequest request = Iterables.getOnlyElement(pending);
+        assertThat(request.getUri(), is(equalTo(prefix + pagePath + HTML_EXTENSION)));
+    }
+
+    private void initializeQueue() {
+        ContentScoreUpdateServiceImpl.internalQueueManager = new UploadQueue(
+            2 * 60 * 1000L,
+            1,
+            "http://somewhere.com/endpoint",
+            UUID.randomUUID(),
+            "",
+            null,
+            null);
+        if (ContentScoreUpdateServiceImpl.queueManagerThread == null) {
+            ContentScoreUpdateServiceImpl.queueManagerThread =
+                new Thread(ContentScoreUpdateServiceImpl.internalQueueManager);
+        }
+    }
+
+    private Page mockPage(final String pagePath, final String externalizerPath, final String externalLink)
+        throws Exception {
+
         Page page = mock(Page.class);
         when(page.getPath()).thenReturn(pagePath);
 
         Resource resource = mock(Resource.class);
         when(page.adaptTo(Resource.class)).thenReturn(resource);
+
+        Resource contentResource = mock(Resource.class);
+        Node contentNode = mock(Node.class);
+        when(contentResource.adaptTo(Node.class)).thenReturn(contentNode);
+        Session session = mock(Session.class);
+        when(contentNode.getSession()).thenReturn(session);
+        when(page.getContentResource()).thenReturn(contentResource);
+
+        Tag scoreTag = mock(Tag.class);
+        when(scoreTag.getTagID()).thenReturn(SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX + "6");
+        when(page.getTags()).thenReturn(new Tag[] {scoreTag});
 
         ResourceResolver resolver = mock(ResourceResolver.class);
         when(resource.getResourceResolver()).thenReturn(resolver);

@@ -178,7 +178,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         if (useVanity && vanityUrl) {
             pageUrl = pageUrl.replace(publishConfiguration[0], "");
-        } else if ((!useVanity && vanityUrl) || (useVanity && !vanityUrl)) {
+        } else if (useVanity) {
             return null;
         } else {
             pageUrl += ".html";
