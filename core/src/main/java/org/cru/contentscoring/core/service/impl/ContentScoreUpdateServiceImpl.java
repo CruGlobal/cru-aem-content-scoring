@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.ConfigurationPolicy;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
@@ -33,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-@Component
+@Component(policy = ConfigurationPolicy.REQUIRE)
 @Service(ContentScoreUpdateService.class)
 public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService {
     private static final Logger LOG = LoggerFactory.getLogger(ContentScoreUpdateServiceImpl.class);
