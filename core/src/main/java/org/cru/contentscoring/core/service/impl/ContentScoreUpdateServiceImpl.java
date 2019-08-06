@@ -1,31 +1,36 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.commons.Externalizer;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
+import org.cru.contentscoring.core.webservices.SetMessageBodyReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -60,8 +65,18 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             + "Write recipients here separated by comma.")
     static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
 
+    @Property(
+        label = "URL Mapper Endpoint",
+        description = "URL mapper endpoint on the publishers")
+    static final String URL_MAPPER_ENDPOINT = "urlMapperEndpoint";
+
     private static final String API_KEY_LOCATION = "AEM_CONTENT_SCORING_API_KEY";
+    static final String VANITY_PATH = "sling:vanityPath";
+    static final String VANITY_REDIRECT = "sling:redirect";
     private UUID apiKey;
+    private String urlMapperEndpoint;
+
+    ClientBuilder clientBuilder;
 
 
     @Reference
@@ -80,8 +95,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         apiKey = UUID.fromString(apiKeyString);
 
         externalizersConfigs = PropertiesUtil.toMap(config.get(EXTERNALIZERS), null);
+        urlMapperEndpoint = (String) config.get(URL_MAPPER_ENDPOINT);
+        Preconditions.checkNotNull(urlMapperEndpoint, "URL Mapper Endpoint must be configured in aem_osgi_config.");
 
         startQueueManager(config);
+        clientBuilder = ClientBuilder.newBuilder();
     }
 
     private void startQueueManager(final Map<String, Object> config) {
@@ -120,8 +138,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             return;
         }
 
-        handleRequest(page, getPageUrl(page, false), score); // send the real URL
-        handleRequest(page, getPageUrl(page, true), score);  // send the vanity if it has one
+        Set<String> urlsToSend = determinePageUrlsToSend(page);
+
+        for (String url : urlsToSend) {
+            handleRequest(page, url, score);
+        }
     }
 
     private void handleRequest(final Page page, final String pageUrl, final int score) throws RepositoryException {
@@ -160,30 +181,41 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    String getPageUrl(final Page page, final boolean useVanity) {
-        String path = page.getVanityUrl();
-        boolean vanityUrl = !Strings.isNullOrEmpty(path);
+    Set<String> determinePageUrlsToSend(final Page page) {
+        Set<String> pathsToSend = new HashSet<>();
 
-        if (!vanityUrl) {
-            path = page.getPath();
+        pathsToSend.add(page.getPath());
+
+        ValueMap properties = page.getContentResource().adaptTo(ValueMap.class);
+        if (properties != null) {
+            Boolean redirectVanity = properties.get(VANITY_REDIRECT, Boolean.class);
+
+            if (redirectVanity != null && redirectVanity) {
+                // In this case, the vanity URL is never actually landed upon, since it redirects to the page path.
+                return getUrlsFromPaths(page, pathsToSend);
+            }
+
+            String[] vanityPaths = properties.get(VANITY_PATH, String[].class);
+
+            if (vanityPaths != null && vanityPaths.length > 0) {
+                pathsToSend.addAll(Arrays.asList(vanityPaths));
+            }
         }
 
-        Resource resource = page.adaptTo(Resource.class);
-        ResourceResolver resolver = resource.getResourceResolver();
-        Externalizer externalizer = resolver.adaptTo(Externalizer.class);
+        return getUrlsFromPaths(page, pathsToSend);
+    }
 
+    private Set<String> getUrlsFromPaths(final Page page, final Set<String> paths) {
         String[] publishConfiguration = getPublishConfiguration(page.getPath());
         String domain = publishConfiguration[1];
-        String pageUrl = externalizer.externalLink(resolver, domain, path);
 
-        if (useVanity && vanityUrl) {
-            pageUrl = pageUrl.replace(publishConfiguration[0], "");
-        } else if (useVanity) {
-            return null;
-        } else {
-            pageUrl += ".html";
-        }
-        return pageUrl;
+        Client client = clientBuilder.register(SetMessageBodyReader.class).build();
+        Response response = client.target(urlMapperEndpoint)
+            .queryParam("paths", paths)
+            .queryParam("domain", domain)
+            .request()
+            .get();
+        return response.readEntity(new GenericType<Set<String>>(){});
     }
 
     @VisibleForTesting
