@@ -3,6 +3,7 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.felix.scr.annotations.Activate;
@@ -17,7 +18,6 @@ import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
-import org.cru.contentscoring.core.webservices.SetMessageBodyReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,7 +204,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     private Set<String> getUrlsFromPaths(final Page page, final Set<String> paths) {
         String domain = getDomain(page.getPath());
 
-        Client client = clientBuilder.register(SetMessageBodyReader.class).build();
+        Client client = clientBuilder.register(JacksonJsonProvider.class).build();
         Response response = client.target(urlMapperEndpoint)
             .queryParam("paths", paths)
             .queryParam("domain", domain)

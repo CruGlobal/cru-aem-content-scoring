@@ -4,9 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.collect.Lists;
+import java.io.IOException;
+import javax.ws.rs.ext.MessageBodyReader;
 import org.apache.commons.io.IOUtils;
 import org.glassfish.hk2.utilities.reflection.ParameterizedTypeImpl;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -20,8 +24,12 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
-public class SetMessageBodyReaderTest {
-    private SetMessageBodyReader messageBodyReader = new SetMessageBodyReader();
+/**
+ * A test that verifies Jackson can be used for reading {@code Set<String>}
+ * from a simple json array.
+ */
+public class JacksonStringSetTest {
+    private MessageBodyReader<Object> messageBodyReader = new JacksonJsonProvider();
 
     @Test
     public void testShouldBeReadable() {
@@ -38,16 +46,8 @@ public class SetMessageBodyReaderTest {
     }
 
     @Test
-    public void testShouldNotBeReadableBecauseDifferentGeneric() {
-        ParameterizedType type = new ParameterizedTypeImpl(Set.class, Boolean.class);
-
-        boolean isReadable = messageBodyReader.isReadable(Set.class, type, null, null);
-        assertThat(isReadable, is(equalTo(false)));
-    }
-
-    @Test
     @SuppressWarnings("unchecked")
-    public void testReadSet() {
+    public void testReadSet() throws IOException {
         ParameterizedType type = new ParameterizedTypeImpl(Set.class, String.class);
 
         JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(false);
@@ -58,7 +58,7 @@ public class SetMessageBodyReaderTest {
         JsonNode arrayNode = new ArrayNode(jsonNodeFactory, Lists.newArrayList(one, two, three));
 
         InputStream inputStream = IOUtils.toInputStream(arrayNode.toString(), Charset.forName("utf-8"));
-        Set<String> actual = messageBodyReader.readFrom(Set.class, type, null, null, null, inputStream);
+        Set<String> actual = (Set<String>) messageBodyReader.readFrom(Object.class, type, null, null, null, inputStream);
 
         Set<String> expected = new HashSet<>();
         expected.add("one");
@@ -71,7 +71,7 @@ public class SetMessageBodyReaderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testReadSetWithDuplicates() {
+    public void testReadSetWithDuplicates() throws IOException {
         ParameterizedType type = new ParameterizedTypeImpl(Set.class, String.class);
 
         JsonNodeFactory jsonNodeFactory = new JsonNodeFactory(false);
@@ -83,7 +83,7 @@ public class SetMessageBodyReaderTest {
         JsonNode arrayNode = new ArrayNode(jsonNodeFactory, Lists.newArrayList(one, two, three, threeSecond));
 
         InputStream inputStream = IOUtils.toInputStream(arrayNode.toString(), Charset.forName("utf-8"));
-        Set<String> actual = messageBodyReader.readFrom(Set.class, type, null, null, null, inputStream);
+        Set<String> actual = (Set<String>) messageBodyReader.readFrom(Object.class, type, null, null, null, inputStream);
 
         Set<String> expected = new HashSet<>();
         expected.add("one");

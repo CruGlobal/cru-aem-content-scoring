@@ -13,7 +13,6 @@ import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
-import org.cru.contentscoring.core.webservices.SetMessageBodyReader;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -359,7 +358,7 @@ public class ContentScoreUpdateServiceImplTest {
         when(client.target(anyString())).thenReturn(webTarget);
 
         ClientBuilder clientBuilder = mock(ClientBuilder.class);
-        when(clientBuilder.register(SetMessageBodyReader.class)).thenReturn(clientBuilder);
+        when(clientBuilder.register(any())).thenReturn(clientBuilder);
         when(clientBuilder.build()).thenReturn(client);
         updateService.clientBuilder = clientBuilder;
     }
