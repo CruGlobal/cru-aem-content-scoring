@@ -405,11 +405,10 @@ public class ContentScoreUpdateServiceImplTest {
         updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
 
         String path = "/content/foo/us/en/some-page";
-        String[] configuration = updateService.getPublishConfiguration(path);
+        String domain = updateService.getDomain(path);
 
-        assertThat(configuration, is(not(nullValue())));
-        assertThat(configuration[0], is(equalTo("/content/foo/us/en")));
-        assertThat(configuration[1], is(equalTo("foo-publish")));
+        assertThat(domain, is(not(nullValue())));
+        assertThat(domain, is(equalTo("foo-publish")));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -417,6 +416,6 @@ public class ContentScoreUpdateServiceImplTest {
         updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
 
         String path = "/content/fail/us/en/some-page";
-        updateService.getPublishConfiguration(path);
+        updateService.getDomain(path);
     }
 }

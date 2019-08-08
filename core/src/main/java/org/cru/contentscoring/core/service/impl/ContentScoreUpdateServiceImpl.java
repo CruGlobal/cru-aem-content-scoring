@@ -184,31 +184,25 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     @VisibleForTesting
     Set<String> determinePageUrlsToSend(final Page page) {
         Set<String> pathsToSend = new HashSet<>();
-
         pathsToSend.add(page.getPath());
 
         ValueMap properties = page.getContentResource().adaptTo(ValueMap.class);
         if (properties != null) {
-            Boolean redirectVanity = properties.get(VANITY_REDIRECT, Boolean.class);
+            boolean redirectVanity = properties.get(VANITY_REDIRECT, false);
 
-            if (redirectVanity != null && redirectVanity) {
-                // In this case, the vanity URL is never actually landed upon, since it redirects to the page path.
-                return getUrlsFromPaths(page, pathsToSend);
-            }
-
-            String[] vanityPaths = properties.get(VANITY_PATH, String[].class);
-
-            if (vanityPaths != null && vanityPaths.length > 0) {
+            if (!redirectVanity) {
+                String[] vanityPaths = properties.get(VANITY_PATH, new String[0]);
                 pathsToSend.addAll(Arrays.asList(vanityPaths));
             }
+            // otherwise, the vanity URL is never actually landed upon,
+            // since it redirects to the page path.
         }
 
         return getUrlsFromPaths(page, pathsToSend);
     }
 
     private Set<String> getUrlsFromPaths(final Page page, final Set<String> paths) {
-        String[] publishConfiguration = getPublishConfiguration(page.getPath());
-        String domain = publishConfiguration[1];
+        String domain = getDomain(page.getPath());
 
         Client client = clientBuilder.register(SetMessageBodyReader.class).build();
         Response response = client.target(urlMapperEndpoint)
@@ -220,11 +214,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    String[] getPublishConfiguration(final String path) {
+    String getDomain(final String path) {
         if (externalizersConfigs != null) {
             for (String key : externalizersConfigs.keySet()) {
                 if(path.contains(key)) {
-                    return new String[] {key, externalizersConfigs.get(key)};
+                    return externalizersConfigs.get(key);
                 }
             }
         }

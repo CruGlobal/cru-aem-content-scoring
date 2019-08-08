@@ -65,10 +65,11 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
 
         Set<String> urls = new HashSet<>();
         for (String path : paths) {
+            final String url = externalizer.externalLink(resourceResolver, domain, path);
             if (resourceResolver.getResource(path) != null) {
-                urls.add(externalizer.externalLink(resourceResolver, domain, path) + ".html");
+                urls.add(url + ".html");
             } else {
-                urls.add(externalizer.externalLink(resourceResolver, domain, path));
+                urls.add(url);
             }
         }
 
