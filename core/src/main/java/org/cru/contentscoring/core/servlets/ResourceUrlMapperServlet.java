@@ -41,6 +41,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
 
         Set<String> urls = determineUrls(pathsParameter, domainParameter, request.getResourceResolver());
 
+        response.setHeader("Content-Type", "application/json");
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(urls);
         response.getWriter().write(json);

@@ -100,6 +100,7 @@ public class ResourceUrlMapperServletTest {
         servlet.doGet(request, response);
         printWriter.flush();
 
+        verify(response).setHeader("Content-Type", "application/json");
         String json = outputStream.toString();
         assertThat(json.contains(BASE_URL + pagePath + HTML_EXTENSION), is(equalTo(true)));
         assertThat(json.contains(BASE_URL + vanityOne), is(equalTo(true)));
