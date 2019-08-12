@@ -10,7 +10,6 @@ import java.io.IOException;
 import javax.ws.rs.ext.MessageBodyReader;
 import org.apache.commons.io.IOUtils;
 import org.glassfish.hk2.utilities.reflection.ParameterizedTypeImpl;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
