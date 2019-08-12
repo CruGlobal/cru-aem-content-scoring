@@ -1,20 +1,19 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.commons.Externalizer;
 import com.day.cq.mailer.MessageGatewayService;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.ConfigurationPolicy;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
@@ -24,11 +23,19 @@ import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-@Component
+@Component(policy = ConfigurationPolicy.REQUIRE)
 @Service(ContentScoreUpdateService.class)
 public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService {
     private static final Logger LOG = LoggerFactory.getLogger(ContentScoreUpdateServiceImpl.class);
@@ -60,8 +67,18 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             + "Write recipients here separated by comma.")
     static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
 
+    @Property(
+        label = "URL Mapper Endpoint",
+        description = "URL mapper endpoint on the publishers")
+    static final String URL_MAPPER_ENDPOINT = "urlMapperEndpoint";
+
     private static final String API_KEY_LOCATION = "AEM_CONTENT_SCORING_API_KEY";
+    static final String VANITY_PATH = "sling:vanityPath";
+    static final String VANITY_REDIRECT = "sling:redirect";
     private UUID apiKey;
+    private String urlMapperEndpoint;
+
+    ClientBuilder clientBuilder;
 
 
     @Reference
@@ -80,8 +97,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         apiKey = UUID.fromString(apiKeyString);
 
         externalizersConfigs = PropertiesUtil.toMap(config.get(EXTERNALIZERS), null);
+        urlMapperEndpoint = (String) config.get(URL_MAPPER_ENDPOINT);
+        Preconditions.checkNotNull(urlMapperEndpoint, "URL Mapper Endpoint must be configured in aem_osgi_config.");
 
         startQueueManager(config);
+        clientBuilder = ClientBuilder.newBuilder();
     }
 
     private void startQueueManager(final Map<String, Object> config) {
@@ -120,12 +140,22 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             return;
         }
 
-        ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
-        request.setUri(getPageUrl(page));
-        request.setScore(score);
+        Set<String> urlsToSend = determinePageUrlsToSend(page);
 
-        sendUpdateRequest(request);
-        setContentScoreUpdatedDate(page);
+        for (String url : urlsToSend) {
+            handleRequest(page, url, score);
+        }
+    }
+
+    private void handleRequest(final Page page, final String pageUrl, final int score) throws RepositoryException {
+        if (pageUrl != null) {
+            ContentScoreUpdateRequest request = new ContentScoreUpdateRequest();
+            request.setUri(pageUrl);
+            request.setScore(score);
+
+            sendUpdateRequest(request);
+            setContentScoreUpdatedDate(page);
+        }
     }
 
     @VisibleForTesting
@@ -153,36 +183,47 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     @VisibleForTesting
-    String getPageUrl(final Page page) {
-        String path = page.getVanityUrl();
-        boolean vanityUrl = !Strings.isNullOrEmpty(path);
+    Set<String> determinePageUrlsToSend(final Page page) {
+        Set<String> pathsToSend = new HashSet<>();
+        pathsToSend.add(page.getPath());
 
-        if (!vanityUrl) {
-            path = page.getPath();
+        ValueMap properties = page.getContentResource().adaptTo(ValueMap.class);
+        if (properties != null) {
+            boolean redirectVanity = properties.get(VANITY_REDIRECT, false);
+
+            if (!redirectVanity) {
+                String[] vanityPaths = properties.get(VANITY_PATH, new String[0]);
+                pathsToSend.addAll(Arrays.asList(vanityPaths));
+            }
+            // otherwise, the vanity URL is never actually landed upon,
+            // since it redirects to the page path.
         }
 
-        Resource resource = page.adaptTo(Resource.class);
-        ResourceResolver resolver = resource.getResourceResolver();
-        Externalizer externalizer = resolver.adaptTo(Externalizer.class);
+        return getUrlsFromPaths(page, pathsToSend);
+    }
 
-        String[] publishConfiguration = getPublishConfiguration(page.getPath());
-        String domain = publishConfiguration[1];
-        String pageUrl = externalizer.externalLink(resolver, domain, path);
+    private Set<String> getUrlsFromPaths(final Page page, final Set<String> paths) {
+        String domain = getDomain(page.getPath());
 
-        if (vanityUrl) {
-            pageUrl = pageUrl.replace(publishConfiguration[0], "");
-        } else {
-            pageUrl += ".html";
+        Client client = clientBuilder.register(JacksonJsonProvider.class).build();
+        WebTarget webTarget = client.target(urlMapperEndpoint);
+
+        for (String path : paths) {
+            webTarget = webTarget.queryParam("path", path);
         }
-        return pageUrl;
+        Response response = webTarget
+            .queryParam("domain", domain)
+            .request()
+            .get();
+        return response.readEntity(new GenericType<Set<String>>(){});
     }
 
     @VisibleForTesting
-    String[] getPublishConfiguration(final String path) {
+    String getDomain(final String path) {
         if (externalizersConfigs != null) {
             for (String key : externalizersConfigs.keySet()) {
                 if(path.contains(key)) {
-                    return new String[] {key, externalizersConfigs.get(key)};
+                    return externalizersConfigs.get(key);
                 }
             }
         }
