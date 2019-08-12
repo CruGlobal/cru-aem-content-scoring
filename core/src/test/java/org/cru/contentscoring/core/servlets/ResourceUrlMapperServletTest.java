@@ -1,7 +1,6 @@
 package org.cru.contentscoring.core.servlets;
 
 import com.day.cq.commons.Externalizer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
@@ -52,13 +51,18 @@ public class ResourceUrlMapperServletTest {
 
         verify(response).setStatus(400);
         printWriter.flush();
-        assertThat(outputStream.toString(), is(equalTo("Paths parameter is missing.")));
+        assertThat(outputStream.toString(), is(equalTo("Path parameter is missing.")));
     }
 
     @Test
     public void testGetWithoutDomain() throws Exception {
         SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
-        when(request.getRequestParameter("paths")).thenReturn(new StringParameter("paths", "[/one, /two, /three]"));
+
+        StringParameter one = new StringParameter("path", "/one");
+        StringParameter two = new StringParameter("path", "/two");
+        StringParameter three = new StringParameter("path", "/three");
+        StringParameter[] paths = new StringParameter[] {one, two, three};
+        when(request.getRequestParameters("path")).thenReturn(paths);
 
         SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
 
@@ -78,7 +82,11 @@ public class ResourceUrlMapperServletTest {
         String pagePath = "/content/app/us/en/page";
         String vanityOne = "/us/en/page";
         String vanityTwo = "/page";
-        String paths = "[" + StringUtils.join(new String[] {pagePath, vanityOne, vanityTwo}, ",") + "]";
+
+        StringParameter one = new StringParameter("path", pagePath);
+        StringParameter two = new StringParameter("path", vanityOne);
+        StringParameter three = new StringParameter("path", vanityTwo);
+        StringParameter[] paths = new StringParameter[] {one, two, three};
 
         mockExternalLink(pagePath);
         mockExternalLink(vanityOne);
@@ -87,7 +95,7 @@ public class ResourceUrlMapperServletTest {
         when(resourceResolver.getResource(pagePath)).thenReturn(mock(Resource.class));
 
         SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
-        when(request.getRequestParameter("paths")).thenReturn(new StringParameter("paths", paths));
+        when(request.getRequestParameters("path")).thenReturn(paths);
         when(request.getRequestParameter("domain")).thenReturn(new StringParameter("domain", DOMAIN));
         when(request.getResourceResolver()).thenReturn(resourceResolver);
 

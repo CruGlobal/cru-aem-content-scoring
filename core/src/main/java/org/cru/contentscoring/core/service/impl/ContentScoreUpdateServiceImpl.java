@@ -25,6 +25,7 @@ import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
@@ -205,8 +206,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         String domain = getDomain(page.getPath());
 
         Client client = clientBuilder.register(JacksonJsonProvider.class).build();
-        Response response = client.target(urlMapperEndpoint)
-            .queryParam("paths", paths)
+        WebTarget webTarget = client.target(urlMapperEndpoint);
+
+        for (String path : paths) {
+            webTarget = webTarget.queryParam("path", path);
+        }
+        Response response = webTarget
             .queryParam("domain", domain)
             .request()
             .get();

@@ -10,8 +10,11 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
@@ -24,11 +27,11 @@ import java.util.Set;
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     @Override
     protected void doGet(final SlingHttpServletRequest request, final SlingHttpServletResponse response) throws IOException {
-        RequestParameter pathsParameter = request.getRequestParameter("paths");
+        RequestParameter[] pathParameters = request.getRequestParameters("path");
 
-        if (pathsParameter == null) {
+        if (pathParameters == null || pathParameters.length == 0) {
             response.setStatus(400);
-            response.getWriter().write("Paths parameter is missing.");
+            response.getWriter().write("Path parameter is missing.");
             return;
         }
 
@@ -39,7 +42,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        Set<String> urls = determineUrls(pathsParameter, domainParameter, request.getResourceResolver());
+        Set<String> urls = determineUrls(pathParameters, domainParameter, request.getResourceResolver());
 
         response.setHeader("Content-Type", "application/json");
         ObjectMapper objectMapper = new ObjectMapper();
@@ -48,12 +51,13 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     }
 
     private Set<String> determineUrls(
-        final RequestParameter pathsParameter,
+        final RequestParameter[] pathParameters,
         final RequestParameter domainParameter,
         final ResourceResolver resourceResolver) {
 
-        String pathsString = pathsParameter.getString().replace("[", "").replace("]", "");
-        String[] paths = pathsString.split(",");
+        List<String> paths = Arrays.stream(pathParameters)
+            .map(RequestParameter::getString)
+            .collect(Collectors.toList());
 
         String domain = domainParameter.getString();
 

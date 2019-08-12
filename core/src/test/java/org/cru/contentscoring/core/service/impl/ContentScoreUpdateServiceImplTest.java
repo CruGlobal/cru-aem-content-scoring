@@ -350,7 +350,7 @@ public class ContentScoreUpdateServiceImplTest {
         when(builder.get()).thenReturn(response);
 
         WebTarget webTarget = mock(WebTarget.class);
-        when(webTarget.queryParam(eq("paths"), any(Set.class))).thenReturn(webTarget);
+        when(webTarget.queryParam(eq("path"), anyString())).thenReturn(webTarget);
         when(webTarget.queryParam("domain", DOMAIN)).thenReturn(webTarget);
         when(webTarget.request()).thenReturn(builder);
 
