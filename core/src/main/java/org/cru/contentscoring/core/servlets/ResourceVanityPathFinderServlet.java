@@ -1,5 +1,26 @@
 package org.cru.contentscoring.core.servlets;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.servlet.Servlet;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.NonExistingResource;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.day.cq.search.PredicateGroup;
 import com.day.cq.search.Query;
 import com.day.cq.search.QueryBuilder;
@@ -7,31 +28,13 @@ import com.day.cq.search.result.Hit;
 import com.day.cq.search.result.SearchResult;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.sling.SlingServlet;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.resource.NonExistingResource;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This servlet is good for finding resource paths for home pages and vanity URLs that don't end with an extension.
  */
-@SlingServlet(
-    paths = "/bin/cru/path/finder",
-    metatype = true
-)
+@Component(service = Servlet.class, property = {
+        "sling.servlet.methods=" + HttpConstants.METHOD_GET,
+        "sling.servlet.paths=/bin/cru/path/finder" })
 public class ResourceVanityPathFinderServlet extends SlingSafeMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceVanityPathFinderServlet.class);
 

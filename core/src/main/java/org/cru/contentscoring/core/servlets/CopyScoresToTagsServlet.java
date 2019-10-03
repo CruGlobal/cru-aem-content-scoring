@@ -1,5 +1,30 @@
 package org.cru.contentscoring.core.servlets;
 
+import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX;
+
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.servlet.Servlet;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+import org.apache.sling.settings.SlingSettingsService;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.day.cq.commons.jcr.JcrConstants;
 import com.day.cq.replication.ReplicationActionType;
 import com.day.cq.replication.ReplicationException;
@@ -14,33 +39,10 @@ import com.day.cq.tagging.TagManager;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.sling.SlingServlet;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.servlets.SlingAllMethodsServlet;
-import org.apache.sling.settings.SlingSettingsService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
-import static org.cru.contentscoring.core.service.impl.SyncScoreServiceImpl.SCALE_OF_BELIEF_TAG_PREFIX;
-
-@SlingServlet(
-    paths = "/bin/cru/content-scoring/move-scores-to-tags",
-    metatype = true,
-    methods = {"PUT"}
-)
+@Component(service = Servlet.class, property = {
+        "sling.servlet.methods=" + HttpConstants.METHOD_PUT,
+        "sling.servlet.paths=/bin/cru/content-scoring/move-scores-to-tags" })
 public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(CopyScoresToTagsServlet.class);
 

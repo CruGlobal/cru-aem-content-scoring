@@ -1,27 +1,25 @@
 package org.cru.contentscoring.core.listeners;
 
-import com.day.cq.replication.ReplicationAction;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.sling.event.jobs.JobManager;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.day.cq.replication.ReplicationAction;
 
 /**
  * A service to listen changes in the resource tree. It registers an 
  * event handler service. When the event is handled a new Job is 
  * created to index the page related with the replication event thrown.
  */
-@Component(immediate = true)
-@Service
-@Property(name = "event.topics", value = ReplicationAction.EVENT_TOPIC)
+@Component(service = EventHandler.class, immediate = true, property = {
+        "event.topics=" + ReplicationAction.EVENT_TOPIC})
 public class ReplicationEventHandler implements EventHandler {
 
     private Logger LOG = LoggerFactory.getLogger(this.getClass());

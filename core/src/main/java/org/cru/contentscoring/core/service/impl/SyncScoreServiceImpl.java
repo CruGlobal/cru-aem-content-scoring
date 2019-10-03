@@ -1,23 +1,23 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.tagging.Tag;
-import com.day.cq.tagging.TagManager;
-import com.google.common.collect.Lists;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.api.resource.Resource;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.cru.contentscoring.core.service.SyncScoreService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
 import java.util.Calendar;
 import java.util.List;
 
-@Component
-@Service(SyncScoreService.class)
+import javax.jcr.Node;
+import javax.jcr.RepositoryException;
+
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.cru.contentscoring.core.service.SyncScoreService;
+import org.osgi.service.component.annotations.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.day.cq.tagging.Tag;
+import com.day.cq.tagging.TagManager;
+import com.google.common.collect.Lists;
+
+@Component(service = SyncScoreService.class)
 public class SyncScoreServiceImpl implements SyncScoreService {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServiceImpl.class);
 

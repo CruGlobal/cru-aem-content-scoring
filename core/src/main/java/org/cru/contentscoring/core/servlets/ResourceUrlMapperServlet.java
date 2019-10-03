@@ -1,14 +1,5 @@
 package org.cru.contentscoring.core.servlets;
 
-import com.day.cq.commons.Externalizer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.felix.scr.annotations.sling.SlingServlet;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.request.RequestParameter;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,14 +7,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.servlet.Servlet;
+
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.osgi.service.component.annotations.Component;
+
+import com.day.cq.commons.Externalizer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
  * based on the publisher's sling mapping.
  */
-@SlingServlet(
-    methods = "GET",
-    paths = "/bin/cru/url/mapper"
-)
+@Component(service = Servlet.class, property = {
+        "sling.servlet.methods=" + HttpConstants.METHOD_GET,
+        "sling.servlet.paths=/bin/cru/url/mapper" })
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     @Override
     protected void doGet(final SlingHttpServletRequest request, final SlingHttpServletResponse response) throws IOException {

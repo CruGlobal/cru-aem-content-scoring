@@ -1,32 +1,35 @@
 package org.cru.contentscoring.core.servlets;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.sling.SlingServlet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.sling.api.SlingHttpServletRequest;
-import org.apache.sling.api.SlingHttpServletResponse;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.servlets.SlingAllMethodsServlet;
-import org.cru.contentscoring.core.service.SyncScoreService;
-import org.cru.contentscoring.core.util.SystemUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@SlingServlet(
-    paths = "/bin/cru/content-scoring/sync",
-    metatype = true
-)
+import javax.servlet.Servlet;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.Response;
+
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.sling.api.SlingHttpServletRequest;
+import org.apache.sling.api.SlingHttpServletResponse;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.servlets.HttpConstants;
+import org.apache.sling.api.servlets.SlingAllMethodsServlet;
+import org.cru.contentscoring.core.service.SyncScoreService;
+import org.cru.contentscoring.core.util.SystemUtils;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
+
+@Component(service = Servlet.class, property = {
+        "sling.servlet.methods=" + HttpConstants.METHOD_POST,
+        "sling.servlet.paths=/bin/cru/content-scoring/sync" })
 public class SyncScoreServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(SyncScoreServlet.class);
 
