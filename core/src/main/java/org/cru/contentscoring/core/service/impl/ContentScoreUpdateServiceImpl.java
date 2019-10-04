@@ -62,7 +62,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         @AttributeDefinition(
                 name = "Max Retries",
-                description = "Max number of retry for unsuccessful attempts.")
+                description = "Max number of retries for unsuccessful attempts.")
         int maxRetries();
 
         @AttributeDefinition(
