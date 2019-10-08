@@ -1,25 +1,11 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.mailer.MessageGatewayService;
-import com.day.cq.tagging.Tag;
-import com.day.cq.wcm.api.Page;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.ConfigurationPolicy;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.commons.osgi.PropertiesUtil;
-import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
-import org.cru.contentscoring.core.queue.UploadQueue;
-import org.cru.contentscoring.core.service.ContentScoreUpdateService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -28,48 +14,87 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
-@Component(policy = ConfigurationPolicy.REQUIRE)
-@Service(ContentScoreUpdateService.class)
+import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.commons.osgi.PropertiesUtil;
+import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
+import org.cru.contentscoring.core.queue.UploadQueue;
+import org.cru.contentscoring.core.service.ContentScoreUpdateService;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.Designate;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.day.cq.mailer.MessageGatewayService;
+import com.day.cq.tagging.Tag;
+import com.day.cq.wcm.api.Page;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+
+@Component(service = ContentScoreUpdateService.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+@Designate(ocd = ContentScoreUpdateServiceImpl.Config.class)
 public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService {
+
+    @ObjectClassDefinition
+    @interface Config {
+        @AttributeDefinition(
+                name = "API Endpoint",
+                description = "The endpoint to which service requests can be submitted.")
+        String apiEndpoint();
+
+        @AttributeDefinition(
+                name = "Externalizers",
+                description = "List of externalizers needed for content scoring",
+                cardinality = Integer.MAX_VALUE)
+        String[] externalizers();
+
+        @AttributeDefinition(
+                name = "Wait Time",
+                description = "Time (in milliseconds) to wait between sending.")
+        long waitTime();
+
+        @AttributeDefinition(
+                name = "Max Retries",
+                description = "Max number of retries for unsuccessful attempts.")
+        int maxRetries();
+
+        @AttributeDefinition(
+                name = "Error Email Recipients",
+                description = "When max number of retries is reached, an email will be sent. "
+                        + "Write recipients here separated by comma.")
+        String errorEmailRecipients();
+
+        @AttributeDefinition(
+                name = "URL Mapper Endpoint",
+                description = "URL mapper endpoint on the publishers")
+        String urlMapperEndpoint();
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ContentScoreUpdateServiceImpl.class);
 
     static final String CONTENT_SCORE_UPDATED = "contentScoreLastUpdated";
 
-    @Property(label = "API Endpoint", description = "The endpoint to which service requests can be submitted.")
     static final String API_ENDPOINT = "apiEndpoint";
     private String apiEndpoint;
 
-    @Property(
-        label = "Externalizers",
-        description = "List of externalizers needed for content scoring",
-        cardinality = Integer.MAX_VALUE)
     static final String EXTERNALIZERS = "externalizers";
     Map<String, String> externalizersConfigs;
 
     private static final Long DEFAULT_WAIT_TIME = 5L * 1000L;
-    @Property(label = "Wait Time", description = "Time (in milliseconds) to wait between sending.")
     static final String WAIT_TIME = "waitTime";
 
     private static final Integer DEFAULT_MAX_RETRIES = 3;
-    @Property(label = "Max Retries", description = "Max number of retries for unsuccessful attempts.")
     static final String MAX_RETRIES = "maxRetries";
 
-    @Property(
-        label = "Error Email Recipients",
-        description = "When max number of retries is reached, an email will be sent. "
-            + "Write recipients here separated by comma.")
     static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
 
-    @Property(
-        label = "URL Mapper Endpoint",
-        description = "URL mapper endpoint on the publishers")
     static final String URL_MAPPER_ENDPOINT = "urlMapperEndpoint";
 
     private static final String API_KEY_LOCATION = "AEM_CONTENT_SCORING_API_KEY";

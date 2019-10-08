@@ -1,20 +1,17 @@
 package org.cru.contentscoring.core.util;
 
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.sling.api.resource.LoginException;
-import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.ResourceResolverFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 
-@Component(label = "Cru.content.scoring SystemUtils",
-    description = "SystemUtils for the Cru content scoring application",
-    metatype = true,
-    immediate = true)
-@Service
+import org.apache.sling.api.resource.LoginException;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
+@Component(service = SystemUtils.class, immediate = true, property = {
+        Constants.SERVICE_DESCRIPTION + "=SystemUtils for the Cru content scoring application" })
 public class SystemUtilsImpl implements SystemUtils {
     @Reference
     private ResourceResolverFactory resourceResolverFactory;

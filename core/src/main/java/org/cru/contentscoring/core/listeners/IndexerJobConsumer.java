@@ -1,27 +1,25 @@
 package org.cru.contentscoring.core.listeners;
 
-import com.day.cq.replication.ReplicationAction;
-import com.day.cq.replication.ReplicationActionType;
-import com.day.cq.wcm.api.Page;
-import com.day.cq.wcm.api.PageManager;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
+import javax.jcr.Session;
+
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.event.jobs.Job;
 import org.apache.sling.event.jobs.consumer.JobConsumer;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Session;
+import com.day.cq.replication.ReplicationAction;
+import com.day.cq.replication.ReplicationActionType;
+import com.day.cq.wcm.api.Page;
+import com.day.cq.wcm.api.PageManager;
 
-@Component
-@Service(value={JobConsumer.class})
-@Property(name=JobConsumer.PROPERTY_TOPICS, value=ReplicationEventHandler.SCORING_JOB_NAME)
+@Component(service = JobConsumer.class, property = {
+        JobConsumer.PROPERTY_TOPICS + "=" + ReplicationEventHandler.SCORING_JOB_NAME})
 public class IndexerJobConsumer implements JobConsumer {
    
     private Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
