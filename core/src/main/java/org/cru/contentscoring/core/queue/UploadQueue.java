@@ -116,7 +116,7 @@ public class UploadQueue implements Runnable {
                     updateContentScoreRequest(getBatch());
                 }
                 if (!retryQueue.isEmpty()) {
-                    LOG.warn("Retry queue has elements, trying to send in {} seconds.", waitTime / 1000);
+                    LOG.debug("Retry queue has elements, trying to send in {} seconds.", waitTime / 1000);
                     Thread.sleep(waitTime);
                     updateContentScoreRequest(retryQueue.poll());
                 }

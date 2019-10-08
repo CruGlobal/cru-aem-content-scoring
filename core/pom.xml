@@ -130,6 +130,18 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.cru</groupId>
+            <artifactId>cru-aem-commons.core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Web Services -->
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
