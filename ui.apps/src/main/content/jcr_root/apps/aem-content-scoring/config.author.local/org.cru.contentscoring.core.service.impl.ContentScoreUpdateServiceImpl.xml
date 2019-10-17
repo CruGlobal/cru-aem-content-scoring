@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
+          jcr:primaryType="sling:OsgiConfig"
+          apiEndpoint="http://localhost:3000/api"
+          externalizers="[/content/cru/us/en=cru-publish,/content/give/us/en=give-publish]"
+          waitTime="5000"
+          maxRetries="3"
+          errorEmailRecipients=""
+          urlMapperEndpoint="http://local.cru.org:4503/bin/cru/url/mapper.txt"/>
