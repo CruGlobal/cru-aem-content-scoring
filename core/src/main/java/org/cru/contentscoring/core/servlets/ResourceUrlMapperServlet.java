@@ -25,7 +25,6 @@ import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
-import com.day.cq.commons.Externalizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -59,49 +58,12 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        Set<String> urls;
-        RequestParameter domainParameter = request.getRequestParameter("domain");
-        if (domainParameter == null) {
-            urls = determineUrls(pathParameters, request.getResourceResolver());
-        } else {
-            urls = determineUrls(pathParameters, domainParameter, request.getResourceResolver());
-        }
+        Set<String> urls = determineUrls(pathParameters, request.getResourceResolver());
 
         response.setHeader("Content-Type", "application/json");
         ObjectMapper objectMapper = new ObjectMapper();
         String json = objectMapper.writeValueAsString(urls);
         response.getWriter().write(json);
-    }
-
-    private Set<String> determineUrls(
-        final RequestParameter[] pathParameters,
-        final RequestParameter domainParameter,
-        final ResourceResolver resourceResolver) {
-
-        List<String> paths = Arrays.stream(pathParameters)
-            .map(RequestParameter::getString)
-            .collect(Collectors.toList());
-
-        String domain = domainParameter.getString();
-
-        Externalizer externalizer = resourceResolver.adaptTo(Externalizer.class);
-
-
-        if (externalizer == null) {
-            throw new RuntimeException("Externalizer is null!");
-        }
-
-        Set<String> urls = new HashSet<>();
-        for (String path : paths) {
-            final String url = externalizer.externalLink(resourceResolver, domain, path);
-            if (resourceResolver.getResource(path) != null) {
-                urls.add(url + ".html");
-            } else {
-                urls.add(url);
-            }
-        }
-
-        return urls;
     }
 
     private Set<String> determineUrls(

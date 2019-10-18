@@ -1,10 +1,8 @@
 package org.cru.contentscoring.core.service.impl;
 
-import com.day.cq.commons.Externalizer;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.sling.api.resource.Resource;
@@ -39,7 +37,6 @@ import java.util.UUID;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_ENDPOINT;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.ERROR_EMAIL_RECIPIENTS;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.EXTERNALIZERS;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.MAX_RETRIES;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.URL_MAPPER_ENDPOINT;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.VANITY_PATH;
@@ -65,14 +62,8 @@ import static org.mockito.Mockito.when;
 public class ContentScoreUpdateServiceImplTest {
     private static final String UNAWARE_SCORE = "1";
     private static final String HTML_EXTENSION = ".html";
-    private static final String DOMAIN = "test-publish";
-
-    private static final Map<String, String> CONFIGURED_EXTERNALIZERS = buildExternalizers();
 
     private Page page;
-
-    @Mock
-    private Externalizer externalizer;
 
     @Mock
     private ResourceResolver resolver;
@@ -95,28 +86,12 @@ public class ContentScoreUpdateServiceImplTest {
         config.put(MAX_RETRIES, 5);
         config.put(ERROR_EMAIL_RECIPIENTS, "some.email@example.com,another.email@example.com");
 
-        List<String> configExternalizers = Lists.newArrayList();
-        configExternalizers.add("/content/test/us/en=test-publish");
-        configExternalizers.add("/content/foo/us/en=foo-publish");
-        config.put(EXTERNALIZERS, configExternalizers);
-
         String urlMapperEndpoint = "http://local.cru.org:4503/bin/cru/url/mapper.txt";
         config.put(URL_MAPPER_ENDPOINT, urlMapperEndpoint);
 
         updateService.activate(config);
         assertThat(ContentScoreUpdateServiceImpl.internalQueueManager, is(not(nullValue())));
         assertThat(ContentScoreUpdateServiceImpl.queueManagerThread, is(not(nullValue())));
-
-        assertThat(updateService.externalizersConfigs, is(not(nullValue())));
-        assertThat(updateService.externalizersConfigs, is(equalTo(CONFIGURED_EXTERNALIZERS)));
-    }
-
-    private static Map<String, String> buildExternalizers() {
-        Map<String, String> externalizers = Maps.newHashMap();
-        externalizers.put("/content/test/us/en", DOMAIN);
-        externalizers.put("/content/foo/us/en", "foo-publish");
-
-        return externalizers;
     }
 
     @Test
@@ -253,8 +228,6 @@ public class ContentScoreUpdateServiceImplTest {
         Page page = mockPage(site, pagePath, vanityPath, site + vanityPath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
-        when(externalizer.externalLink(resolver, DOMAIN, secondVanity)).thenReturn(site + secondVanity);
-
         Map<String, Object> properties = new HashMap<>();
         properties.put(VANITY_PATH, new String[] {vanityPath, secondVanity});
         ValueMap valueMap = new ValueMapDecorator(properties);
@@ -351,7 +324,6 @@ public class ContentScoreUpdateServiceImplTest {
 
         WebTarget webTarget = mock(WebTarget.class);
         when(webTarget.queryParam(eq("path"), anyString())).thenReturn(webTarget);
-        when(webTarget.queryParam("domain", DOMAIN)).thenReturn(webTarget);
         when(webTarget.request()).thenReturn(builder);
 
         Client client = mock(Client.class);
@@ -387,34 +359,7 @@ public class ContentScoreUpdateServiceImplTest {
         when(page.getTags()).thenReturn(new Tag[] {scoreTag});
 
         when(resource.getResourceResolver()).thenReturn(resolver);
-        when(resolver.adaptTo(Externalizer.class)).thenReturn(externalizer);
-
-        when(externalizer.externalLink(resolver, DOMAIN, externalizerPath))
-            .thenReturn(externalLink);
-        when(externalizer.externalLink(resolver, DOMAIN, pagePath))
-            .thenReturn(site + pagePath);
-
-        updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
 
         return page;
-    }
-
-    @Test
-    public void testGetExistingPublishConfiguration() {
-        updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
-
-        String path = "/content/foo/us/en/some-page";
-        String domain = updateService.getDomain(path);
-
-        assertThat(domain, is(not(nullValue())));
-        assertThat(domain, is(equalTo("foo-publish")));
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testGetNonExistingPublishConfiguration() {
-        updateService.externalizersConfigs = CONFIGURED_EXTERNALIZERS;
-
-        String path = "/content/fail/us/en/some-page";
-        updateService.getDomain(path);
     }
 }

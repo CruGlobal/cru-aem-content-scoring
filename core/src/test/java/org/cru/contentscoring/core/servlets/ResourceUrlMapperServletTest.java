@@ -1,6 +1,5 @@
 package org.cru.contentscoring.core.servlets;
 
-import com.day.cq.commons.Externalizer;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
@@ -32,14 +31,10 @@ public class ResourceUrlMapperServletTest {
 
     private ResourceUrlMapperServlet servlet = new ResourceUrlMapperServlet();
     private ResourceResolver resourceResolver;
-    private Externalizer externalizer;
 
     @Before
     public void setup() {
-        externalizer = mock(Externalizer.class);
         resourceResolver = mock(ResourceResolver.class);
-        when(resourceResolver.adaptTo(Externalizer.class)).thenReturn(externalizer);
-
         servlet.absolutePathUriProvider = mock(URIProvider.class);
         servlet.vanityPathUriProvider = mock(VanityPathUriProvider.class);
     }
@@ -126,48 +121,6 @@ public class ResourceUrlMapperServletTest {
         String json = outputStream.toString();
         assertThat(json.contains(BASE_URL + absolutePath + HTML_EXTENSION), is(equalTo(true)));
         assertThat(json.contains(BASE_URL + vanityPath), is(equalTo(true)));
-    }
-
-    @Test
-    public void testGet() throws Exception {
-        String pagePath = "/content/app/us/en/page";
-        String vanityOne = "/us/en/page";
-        String vanityTwo = "/page";
-
-        StringParameter one = new StringParameter("path", pagePath);
-        StringParameter two = new StringParameter("path", vanityOne);
-        StringParameter three = new StringParameter("path", vanityTwo);
-        StringParameter[] paths = new StringParameter[] {one, two, three};
-
-        mockExternalLink(pagePath);
-        mockExternalLink(vanityOne);
-        mockExternalLink(vanityTwo);
-
-        when(resourceResolver.getResource(pagePath)).thenReturn(mock(Resource.class));
-
-        SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
-        when(request.getRequestParameters("path")).thenReturn(paths);
-        when(request.getRequestParameter("domain")).thenReturn(new StringParameter("domain", DOMAIN));
-        when(request.getResourceResolver()).thenReturn(resourceResolver);
-
-        SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        PrintWriter printWriter = new PrintWriter(outputStream);
-        when(response.getWriter()).thenReturn(printWriter);
-
-        servlet.doGet(request, response);
-        printWriter.flush();
-
-        verify(response).setHeader("Content-Type", "application/json");
-        String json = outputStream.toString();
-        assertThat(json.contains(BASE_URL + pagePath + HTML_EXTENSION), is(equalTo(true)));
-        assertThat(json.contains(BASE_URL + vanityOne), is(equalTo(true)));
-        assertThat(json.contains(BASE_URL + vanityTwo), is(equalTo(true)));
-    }
-
-    private void mockExternalLink(final String path) {
-        when(externalizer.externalLink(resourceResolver, DOMAIN, path)).thenReturn(BASE_URL + path);
     }
 
     private class StringParameter implements RequestParameter {

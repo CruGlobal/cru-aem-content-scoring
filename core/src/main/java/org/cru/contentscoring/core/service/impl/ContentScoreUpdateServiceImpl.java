@@ -50,12 +50,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         String apiEndpoint();
 
         @AttributeDefinition(
-                name = "Externalizers",
-                description = "List of externalizers needed for content scoring",
-                cardinality = Integer.MAX_VALUE)
-        String[] externalizers();
-
-        @AttributeDefinition(
                 name = "Wait Time",
                 description = "Time (in milliseconds) to wait between sending.")
         long waitTime();
@@ -83,9 +77,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     static final String API_ENDPOINT = "apiEndpoint";
     private String apiEndpoint;
-
-    static final String EXTERNALIZERS = "externalizers";
-    Map<String, String> externalizersConfigs;
 
     private static final Long DEFAULT_WAIT_TIME = 5L * 1000L;
     static final String WAIT_TIME = "waitTime";
@@ -121,7 +112,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         Preconditions.checkNotNull(apiKeyString, "API Key is null!");
         apiKey = UUID.fromString(apiKeyString);
 
-        externalizersConfigs = PropertiesUtil.toMap(config.get(EXTERNALIZERS), null);
         urlMapperEndpoint = (String) config.get(URL_MAPPER_ENDPOINT);
         Preconditions.checkNotNull(urlMapperEndpoint, "URL Mapper Endpoint must be configured in aem_osgi_config.");
 
@@ -224,12 +214,10 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             // since it redirects to the page path.
         }
 
-        return getUrlsFromPaths(page, pathsToSend);
+        return getUrlsFromPaths(pathsToSend);
     }
 
-    private Set<String> getUrlsFromPaths(final Page page, final Set<String> paths) {
-        String domain = getDomain(page.getPath());
-
+    private Set<String> getUrlsFromPaths(final Set<String> paths) {
         Client client = clientBuilder.register(JacksonJsonProvider.class).build();
         WebTarget webTarget = client.target(urlMapperEndpoint);
 
@@ -237,25 +225,9 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
             webTarget = webTarget.queryParam("path", path);
         }
         Response response = webTarget
-            .queryParam("domain", domain)
             .request()
             .get();
         return response.readEntity(new GenericType<Set<String>>(){});
-    }
-
-    @VisibleForTesting
-    String getDomain(final String path) {
-        if (externalizersConfigs != null) {
-            for (String key : externalizersConfigs.keySet()) {
-                if(path.contains(key)) {
-                    return externalizersConfigs.get(key);
-                }
-            }
-        }
-
-        IllegalStateException exception = new IllegalStateException("Externalizer not found for " + path);
-        LOG.error("Failed to find Externalizer", exception);
-        throw exception;
     }
 
     private void sendUpdateRequest(final ContentScoreUpdateRequest request) {
