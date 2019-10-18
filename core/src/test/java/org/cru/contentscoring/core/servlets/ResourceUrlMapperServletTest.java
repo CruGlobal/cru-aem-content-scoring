@@ -6,12 +6,16 @@ import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.external.URIProvider;
+import org.apache.sling.api.resource.external.URIProvider.Scope;
+import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.URI;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -34,6 +38,8 @@ public class ResourceUrlMapperServletTest {
         externalizer = mock(Externalizer.class);
         resourceResolver = mock(ResourceResolver.class);
         when(resourceResolver.adaptTo(Externalizer.class)).thenReturn(externalizer);
+
+        servlet.uriProvider = mock(URIProvider.class);
     }
 
     @Test
@@ -54,15 +60,33 @@ public class ResourceUrlMapperServletTest {
         assertThat(outputStream.toString(), is(equalTo("Path parameter is missing.")));
     }
 
-
+    @Test
     public void testGetWithoutDomain() throws Exception {
-        SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
-
-        StringParameter one = new StringParameter("path", "/one");
-        StringParameter two = new StringParameter("path", "/two");
-        StringParameter three = new StringParameter("path", "/three");
+        String pathOne = "/one";
+        String pathTwo = "/two";
+        String pathThree = "/three";
+        StringParameter one = new StringParameter("path", pathOne);
+        StringParameter two = new StringParameter("path", pathTwo);
+        StringParameter three = new StringParameter("path", pathThree);
         StringParameter[] paths = new StringParameter[] {one, two, three};
+
+        SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
         when(request.getRequestParameters("path")).thenReturn(paths);
+        when(request.getResourceResolver()).thenReturn(resourceResolver);
+
+        Resource resourceOne = mock(Resource.class);
+        Resource resourceTwo = mock(Resource.class);
+        Resource resourceThree = mock(Resource.class);
+        when(resourceResolver.getResource(pathOne)).thenReturn(resourceOne);
+        when(resourceResolver.getResource(pathTwo)).thenReturn(resourceTwo);
+        when(resourceResolver.getResource(pathThree)).thenReturn(resourceThree);
+
+        when(servlet.uriProvider.toURI(resourceOne, Scope.EXTERNAL, Operation.READ))
+            .thenReturn(new URI(BASE_URL + pathOne + HTML_EXTENSION));
+        when(servlet.uriProvider.toURI(resourceTwo, Scope.EXTERNAL, Operation.READ))
+            .thenReturn(new URI(BASE_URL + pathTwo + HTML_EXTENSION));
+        when(servlet.uriProvider.toURI(resourceThree, Scope.EXTERNAL, Operation.READ))
+            .thenReturn(new URI(BASE_URL + pathThree + HTML_EXTENSION));
 
         SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
 
@@ -71,10 +95,13 @@ public class ResourceUrlMapperServletTest {
         when(response.getWriter()).thenReturn(printWriter);
 
         servlet.doGet(request, response);
-
-        verify(response).setStatus(400);
         printWriter.flush();
-        assertThat(outputStream.toString(), is(equalTo("Domain parameter is missing.")));
+
+        verify(response).setHeader("Content-Type", "application/json");
+        String json = outputStream.toString();
+        assertThat(json.contains(BASE_URL + pathOne + HTML_EXTENSION), is(equalTo(true)));
+        assertThat(json.contains(BASE_URL + pathTwo + HTML_EXTENSION), is(equalTo(true)));
+        assertThat(json.contains(BASE_URL + pathThree + HTML_EXTENSION), is(equalTo(true)));
     }
 
     @Test

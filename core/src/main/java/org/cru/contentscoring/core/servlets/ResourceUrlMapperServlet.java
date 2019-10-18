@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         "sling.servlet.methods=" + HttpConstants.METHOD_GET,
         "sling.servlet.paths=/bin/cru/url/mapper" })
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
-    private URIProvider uriProvider;
+    URIProvider uriProvider;
 
     @Activate
     public void activate() {
