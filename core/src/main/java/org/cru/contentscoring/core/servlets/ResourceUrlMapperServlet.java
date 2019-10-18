@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.Servlet;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
@@ -20,12 +21,14 @@ import org.apache.sling.api.resource.external.URIProvider.Scope;
 import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
@@ -38,14 +41,29 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     URIProvider absolutePathUriProvider;
     VanityPathUriProvider vanityPathUriProvider;
 
+    @Reference
+    private SlingSettingsService slingSettingsService;
+
     @Activate
     public void activate() {
+        String environment = determineEnvironment();
+
         if (absolutePathUriProvider == null) {
-            absolutePathUriProvider = new AbsolutePathUriProvider();
+            absolutePathUriProvider = new AbsolutePathUriProvider(environment);
         }
         if (vanityPathUriProvider == null) {
-            vanityPathUriProvider = new VanityPathUriProvider();
+            vanityPathUriProvider = new VanityPathUriProvider(environment);
         }
+    }
+
+    private String determineEnvironment() {
+        Set<String> possibleEnvironments = ImmutableSet.of("local", "uat", "prod");
+        for (String runMode : slingSettingsService.getRunModes()) {
+            if (possibleEnvironments.contains(runMode)) {
+                return runMode;
+            }
+        }
+        throw new IllegalStateException("Failed to determine environment");
     }
 
     @Override

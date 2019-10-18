@@ -14,13 +14,20 @@ import java.util.Objects;
 public class VanityPathUriProvider implements URIProvider {
     private static final Logger LOG = LoggerFactory.getLogger(VanityPathUriProvider.class);
 
+    private String environment;
+
+    public VanityPathUriProvider(final String environment) {
+        this.environment = environment;
+    }
+
     @Override
     public URI toURI(final Resource resource, final Scope scope, final Operation operation) {
         return toURI(resource.getPath(), resource.getResourceResolver());
     }
 
     public URI toURI(final String path, final ResourceResolver resourceResolver) {
-        Resource slingMap = UriProviderUtil.determineSlingMap(path, resourceResolver);
+        UriProviderUtil util = UriProviderUtil.getInstance(environment);
+        Resource slingMap = util.determineSlingMap(path, resourceResolver);
 
         if (slingMap != null) {
             String protocol = Objects.requireNonNull(slingMap.getParent()).getName();

@@ -14,12 +14,19 @@ import java.util.Objects;
 public class AbsolutePathUriProvider implements URIProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AbsolutePathUriProvider.class);
 
+    private String environment;
+
+    public AbsolutePathUriProvider(final String environment) {
+        this.environment = environment;
+    }
+
     @Override
     public URI toURI(final Resource resource, final Scope scope, final Operation operation) {
         String path = resource.getPath();
         ResourceResolver resourceResolver = resource.getResourceResolver();
 
-        Resource slingMap = UriProviderUtil.determineSlingMap(path, resourceResolver);
+        UriProviderUtil util = UriProviderUtil.getInstance(environment);
+        Resource slingMap = util.determineSlingMap(path, resourceResolver);
 
         if (slingMap != null) {
             String protocol = Objects.requireNonNull(slingMap.getParent()).getName();

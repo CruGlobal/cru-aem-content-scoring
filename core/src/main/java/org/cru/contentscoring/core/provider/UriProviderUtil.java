@@ -5,10 +5,18 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 
 public class UriProviderUtil {
-    private UriProviderUtil() {}
+    private String environment;
 
-    public static Resource determineSlingMap(final String path, final ResourceResolver resourceResolver) {
-        String httpsPath = "/etc/map.publish.prod/https";
+    private UriProviderUtil(final String environment) {
+        this.environment = environment;
+    }
+
+    public static UriProviderUtil getInstance(final String environment) {
+        return new UriProviderUtil(environment);
+    }
+
+    public Resource determineSlingMap(final String path, final ResourceResolver resourceResolver) {
+        String httpsPath = "/etc/map.publish." + environment + "/https";
         Resource httpsRoot = resourceResolver.getResource(httpsPath);
 
         Resource slingMap = null;
@@ -16,7 +24,7 @@ public class UriProviderUtil {
             slingMap = loopThroughSlingMaps(httpsRoot, path);
         }
 
-        String httpPath = "/etc/map.publish.prod/http";
+        String httpPath = "/etc/map.publish." + environment + "/http";
         Resource httpRoot = resourceResolver.getResource(httpPath);
         if (httpRoot != null && slingMap == null) {
             slingMap = loopThroughSlingMaps(httpRoot, path);
@@ -25,7 +33,7 @@ public class UriProviderUtil {
         return slingMap;
     }
 
-    private static Resource loopThroughSlingMaps(final Resource parent, final String path) {
+    private Resource loopThroughSlingMaps(final Resource parent, final String path) {
         if (parent.hasChildren()) {
             for (Resource child : parent.getChildren()) {
                 if (child.getName().contains("_")) {
