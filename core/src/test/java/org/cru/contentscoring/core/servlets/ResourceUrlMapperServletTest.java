@@ -9,6 +9,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.external.URIProvider;
 import org.apache.sling.api.resource.external.URIProvider.Scope;
 import org.apache.sling.api.resource.external.URIProvider.Operation;
+import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,6 +41,7 @@ public class ResourceUrlMapperServletTest {
         when(resourceResolver.adaptTo(Externalizer.class)).thenReturn(externalizer);
 
         servlet.absolutePathUriProvider = mock(URIProvider.class);
+        servlet.vanityPathUriProvider = mock(VanityPathUriProvider.class);
     }
 
     @Test
@@ -61,32 +63,20 @@ public class ResourceUrlMapperServletTest {
     }
 
     @Test
-    public void testGetWithoutDomain() throws Exception {
-        String pathOne = "/one";
-        String pathTwo = "/two";
-        String pathThree = "/three";
-        StringParameter one = new StringParameter("path", pathOne);
-        StringParameter two = new StringParameter("path", pathTwo);
-        StringParameter three = new StringParameter("path", pathThree);
-        StringParameter[] paths = new StringParameter[] {one, two, three};
+    public void testGetOnlyAbsoluteUrl() throws Exception {
+        String absolutePath = "/content/site/us/en/full/absolute/path";
+        StringParameter pathParam = new StringParameter("path", absolutePath);
+        StringParameter[] paths = new StringParameter[] {pathParam};
 
         SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
         when(request.getRequestParameters("path")).thenReturn(paths);
         when(request.getResourceResolver()).thenReturn(resourceResolver);
 
-        Resource resourceOne = mock(Resource.class);
-        Resource resourceTwo = mock(Resource.class);
-        Resource resourceThree = mock(Resource.class);
-        when(resourceResolver.getResource(pathOne)).thenReturn(resourceOne);
-        when(resourceResolver.getResource(pathTwo)).thenReturn(resourceTwo);
-        when(resourceResolver.getResource(pathThree)).thenReturn(resourceThree);
+        Resource resource = mock(Resource.class);
+        when(resourceResolver.getResource(absolutePath)).thenReturn(resource);
 
-        when(servlet.absolutePathUriProvider.toURI(resourceOne, Scope.EXTERNAL, Operation.READ))
-            .thenReturn(new URI(BASE_URL + pathOne + HTML_EXTENSION));
-        when(servlet.absolutePathUriProvider.toURI(resourceTwo, Scope.EXTERNAL, Operation.READ))
-            .thenReturn(new URI(BASE_URL + pathTwo + HTML_EXTENSION));
-        when(servlet.absolutePathUriProvider.toURI(resourceThree, Scope.EXTERNAL, Operation.READ))
-            .thenReturn(new URI(BASE_URL + pathThree + HTML_EXTENSION));
+        when(servlet.absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ))
+            .thenReturn(new URI(BASE_URL + absolutePath + HTML_EXTENSION));
 
         SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
 
@@ -99,9 +89,43 @@ public class ResourceUrlMapperServletTest {
 
         verify(response).setHeader("Content-Type", "application/json");
         String json = outputStream.toString();
-        assertThat(json.contains(BASE_URL + pathOne + HTML_EXTENSION), is(equalTo(true)));
-        assertThat(json.contains(BASE_URL + pathTwo + HTML_EXTENSION), is(equalTo(true)));
-        assertThat(json.contains(BASE_URL + pathThree + HTML_EXTENSION), is(equalTo(true)));
+        assertThat(json.contains(BASE_URL + absolutePath + HTML_EXTENSION), is(equalTo(true)));
+    }
+
+    @Test
+    public void testGetAbsoluteAndVanities() throws Exception {
+        String absolutePath = "/content/site/us/en/full/absolute/path";
+        String vanityPath = "/path";
+        StringParameter absolutePathParam = new StringParameter("path", absolutePath);
+        StringParameter vanityPathParam = new StringParameter("path", vanityPath);
+        StringParameter[] paths = new StringParameter[] {absolutePathParam, vanityPathParam};
+
+        SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
+        when(request.getRequestParameters("path")).thenReturn(paths);
+        when(request.getResourceResolver()).thenReturn(resourceResolver);
+
+        Resource resource = mock(Resource.class);
+        when(resourceResolver.getResource(absolutePath)).thenReturn(resource);
+        when(resourceResolver.resolve(vanityPath)).thenReturn(resource);
+
+        when(servlet.absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ))
+            .thenReturn(new URI(BASE_URL + absolutePath + HTML_EXTENSION));
+        when(servlet.vanityPathUriProvider.toURI(vanityPath, resourceResolver))
+            .thenReturn(new URI(BASE_URL + vanityPath));
+
+        SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(outputStream);
+        when(response.getWriter()).thenReturn(printWriter);
+
+        servlet.doGet(request, response);
+        printWriter.flush();
+
+        verify(response).setHeader("Content-Type", "application/json");
+        String json = outputStream.toString();
+        assertThat(json.contains(BASE_URL + absolutePath + HTML_EXTENSION), is(equalTo(true)));
+        assertThat(json.contains(BASE_URL + vanityPath), is(equalTo(true)));
     }
 
     @Test
