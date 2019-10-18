@@ -39,7 +39,7 @@ public class ResourceUrlMapperServletTest {
         resourceResolver = mock(ResourceResolver.class);
         when(resourceResolver.adaptTo(Externalizer.class)).thenReturn(externalizer);
 
-        servlet.uriProvider = mock(URIProvider.class);
+        servlet.absolutePathUriProvider = mock(URIProvider.class);
     }
 
     @Test
@@ -81,11 +81,11 @@ public class ResourceUrlMapperServletTest {
         when(resourceResolver.getResource(pathTwo)).thenReturn(resourceTwo);
         when(resourceResolver.getResource(pathThree)).thenReturn(resourceThree);
 
-        when(servlet.uriProvider.toURI(resourceOne, Scope.EXTERNAL, Operation.READ))
+        when(servlet.absolutePathUriProvider.toURI(resourceOne, Scope.EXTERNAL, Operation.READ))
             .thenReturn(new URI(BASE_URL + pathOne + HTML_EXTENSION));
-        when(servlet.uriProvider.toURI(resourceTwo, Scope.EXTERNAL, Operation.READ))
+        when(servlet.absolutePathUriProvider.toURI(resourceTwo, Scope.EXTERNAL, Operation.READ))
             .thenReturn(new URI(BASE_URL + pathTwo + HTML_EXTENSION));
-        when(servlet.uriProvider.toURI(resourceThree, Scope.EXTERNAL, Operation.READ))
+        when(servlet.absolutePathUriProvider.toURI(resourceThree, Scope.EXTERNAL, Operation.READ))
             .thenReturn(new URI(BASE_URL + pathThree + HTML_EXTENSION));
 
         SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);

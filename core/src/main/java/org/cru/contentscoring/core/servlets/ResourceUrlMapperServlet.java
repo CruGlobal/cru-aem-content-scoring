@@ -12,6 +12,7 @@ import javax.servlet.Servlet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.external.URIProvider;
@@ -19,7 +20,8 @@ import org.apache.sling.api.resource.external.URIProvider.Scope;
 import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
-import org.cru.contentscoring.core.provider.ContentScoringUriProvider;
+import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
+import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
@@ -34,12 +36,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         "sling.servlet.methods=" + HttpConstants.METHOD_GET,
         "sling.servlet.paths=/bin/cru/url/mapper" })
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
-    URIProvider uriProvider;
+    URIProvider absolutePathUriProvider;
+    VanityPathUriProvider vanityPathUriProvider;
 
     @Activate
     public void activate() {
-        if (uriProvider == null) {
-            uriProvider = new ContentScoringUriProvider();
+        if (absolutePathUriProvider == null) {
+            absolutePathUriProvider = new AbsolutePathUriProvider();
+        }
+        if (vanityPathUriProvider == null) {
+            vanityPathUriProvider = new VanityPathUriProvider();
         }
     }
 
@@ -110,7 +116,14 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         for (String path : paths) {
             Resource resource = resourceResolver.getResource(path);
             if (resource != null) {
-                urls.add(uriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ).toString());
+                urls.add(absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ).toString());
+            } else {
+                resource = resourceResolver.resolve(path);
+                if (resource instanceof NonExistingResource) {
+                    continue;
+                }
+                // This means that a resource exists that can be mapped by the given vanity URL
+                urls.add(vanityPathUriProvider.toURI(path, resourceResolver).toString());
             }
         }
 
