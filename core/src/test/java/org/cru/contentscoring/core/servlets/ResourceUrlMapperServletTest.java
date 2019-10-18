@@ -54,7 +54,7 @@ public class ResourceUrlMapperServletTest {
         assertThat(outputStream.toString(), is(equalTo("Path parameter is missing.")));
     }
 
-    @Test
+
     public void testGetWithoutDomain() throws Exception {
         SlingHttpServletRequest request = mock(SlingHttpServletRequest.class);
 
