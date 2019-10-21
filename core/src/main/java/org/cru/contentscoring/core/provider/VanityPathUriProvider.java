@@ -32,12 +32,19 @@ public class VanityPathUriProvider implements URIProvider {
         if (slingMap != null) {
             String protocol = Objects.requireNonNull(slingMap.getParent()).getName();
             String domain = slingMap.getName();
+            String pathPartToRemove = Objects.requireNonNull(
+                slingMap.getValueMap().get("sling:internalRedirect", String.class));
+
+            String externalPath = path;
+            if (path.startsWith(pathPartToRemove)) {
+                externalPath = path.substring(pathPartToRemove.length());
+            }
 
             try {
                 return new URIBuilder()
                     .setScheme(protocol)
                     .setHost(domain)
-                    .setPath(path)
+                    .setPath(externalPath)
                     .build();
             } catch (URISyntaxException e) {
                 LOG.error("Bad URI", e);
