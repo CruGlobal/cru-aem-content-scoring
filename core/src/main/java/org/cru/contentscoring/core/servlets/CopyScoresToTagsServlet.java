@@ -20,6 +20,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingAllMethodsServlet;
 import org.apache.sling.settings.SlingSettingsService;
+import org.cru.contentscoring.core.util.ExperienceFragmentUtil;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
@@ -47,8 +48,6 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
     private static final Logger LOG = LoggerFactory.getLogger(CopyScoresToTagsServlet.class);
 
     private static final String PRIMARY_XF_NAME = "primaryExperienceFragment";
-    private static final String XF_TYPE = "cq/experience-fragments/components/experiencefragment";
-    private static final String XF_VARIANT_TYPE = "cq:xfVariantType";
 
     @Reference
     private SlingSettingsService slingSettingsService;
@@ -163,9 +162,10 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
             Resource experienceFragment;
 
             if (primaryExperienceFragment != null) {
-                if (isExperienceFragmentVariation(primaryExperienceFragment)) {
+                Resource jcrContent = getJcrContent(primaryExperienceFragment);
+                if (ExperienceFragmentUtil.isExperienceFragmentVariation(jcrContent)) {
                     experienceFragment = primaryExperienceFragment.getParent();
-                } else if (isExperienceFragment(primaryExperienceFragment)) {
+                } else if (ExperienceFragmentUtil.isExperienceFragment(jcrContent)) {
                     experienceFragment = primaryExperienceFragment;
                 } else {
                     return;
@@ -244,15 +244,5 @@ public class CopyScoresToTagsServlet extends SlingAllMethodsServlet {
                 pathsToReplicate.toArray(new String[]{}),
                 new ReplicationOptions());
         }
-    }
-
-    private boolean isExperienceFragment(final Resource resource) {
-        Resource jcrContent = getJcrContent(resource);
-        return jcrContent != null && jcrContent.getResourceType().equals(XF_TYPE);
-    }
-
-    private boolean isExperienceFragmentVariation(final Resource resource) {
-        Resource jcrContent = getJcrContent(resource);
-        return jcrContent != null && jcrContent.getValueMap().containsKey(XF_VARIANT_TYPE);
     }
 }

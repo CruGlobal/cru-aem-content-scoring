@@ -13,6 +13,7 @@ import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
+import org.cru.contentscoring.core.util.ExperienceFragmentUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,6 +58,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,11 +82,14 @@ public class ContentScoreUpdateServiceImplTest {
     @InjectMocks
     private ContentScoreUpdateServiceImpl updateService;
 
+    private Session session;
+
     @Before
     public void setup() throws Exception {
         String site = "https://page.com";
         String pagePath = "/content/test/us/en/page-path";
         page = mockPage(site, pagePath, pagePath, site + pagePath);
+        session = mock(Session.class);
     }
 
     @Test
@@ -326,6 +331,32 @@ public class ContentScoreUpdateServiceImplTest {
         assertThat(request.getUri(), is(equalTo(site + pagePath + HTML_EXTENSION)));
     }
 
+    @Test
+    public void testExperienceFragment() throws Exception {
+        String xfPath = "/content/experience-fragments/shared/en/path";
+
+        Page page = mockPage(null, xfPath, null, null);
+        Resource jcrContent = page.getContentResource();
+        when(jcrContent.getResourceType()).thenReturn(ExperienceFragmentUtil.XF_TYPE);
+
+        updateService.updateContentScore(page);
+        verify(session, never()).save();
+    }
+
+    @Test
+    public void testExperienceFragmentVariation() throws Exception {
+        String path = "/content/experience-fragments/shared/en/path/variation";
+
+        Page page = mockPage(null, path, null, null);
+        Resource jcrContent = page.getContentResource();
+        when(jcrContent.getResourceType()).thenReturn("Site/components/structure/xfpage");
+        Map<String, Object> properties = jcrContent.getValueMap();
+        properties.put(ExperienceFragmentUtil.XF_VARIANT_TYPE, "web");
+
+        updateService.updateContentScore(page);
+        verify(session, never()).save();
+    }
+
     private void initializeQueue() {
         ContentScoreUpdateServiceImpl.internalQueueManager = new UploadQueue(
             2 * 60 * 1000L,
@@ -375,10 +406,14 @@ public class ContentScoreUpdateServiceImplTest {
         Resource resource = mock(Resource.class);
         when(page.adaptTo(Resource.class)).thenReturn(resource);
 
+        Map<String, Object> properties = new HashMap<>();
+
         Resource contentResource = mock(Resource.class);
         Node contentNode = mock(Node.class);
         when(contentResource.adaptTo(Node.class)).thenReturn(contentNode);
-        Session session = mock(Session.class);
+        when(contentResource.getResourceType()).thenReturn("/Site/components/page/page");
+        when(contentResource.getValueMap()).thenReturn(new ValueMapDecorator(properties));
+
         when(contentNode.getSession()).thenReturn(session);
         when(page.getContentResource()).thenReturn(contentResource);
 

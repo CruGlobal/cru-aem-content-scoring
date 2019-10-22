@@ -15,11 +15,13 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 
+import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
+import org.cru.contentscoring.core.util.ExperienceFragmentUtil;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
@@ -160,6 +162,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     @Override
     public void updateContentScore(final Page page) throws RepositoryException {
+        Resource jcrContent = page.getContentResource();
+        if (ExperienceFragmentUtil.isExperienceFragment(jcrContent)
+            || ExperienceFragmentUtil.isExperienceFragmentVariation(jcrContent)) {
+            return;
+        }
+
         int score = getScore(page);
         if (score == -1) {
             return;
