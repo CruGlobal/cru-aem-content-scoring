@@ -375,9 +375,14 @@ public class ContentScoreUpdateServiceImplTest {
         Resource resource = mock(Resource.class);
         when(page.adaptTo(Resource.class)).thenReturn(resource);
 
+        Map<String, Object> properties = new HashMap<>();
+
         Resource contentResource = mock(Resource.class);
         Node contentNode = mock(Node.class);
         when(contentResource.adaptTo(Node.class)).thenReturn(contentNode);
+        when(contentResource.getResourceType()).thenReturn("/Site/components/page/page");
+        when(contentResource.getValueMap()).thenReturn(new ValueMapDecorator(properties));
+
         Session session = mock(Session.class);
         when(contentNode.getSession()).thenReturn(session);
         when(page.getContentResource()).thenReturn(contentResource);
