@@ -97,7 +97,10 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         for (String path : paths) {
             Resource resource = resourceResolver.getResource(path);
             if (resource != null) {
-                urls.add(absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ).toString());
+                URI absoluteUri = absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ);
+                if (absoluteUri != null) {
+                    urls.add(absoluteUri.toString());
+                }
             } else {
                 resource = resourceResolver.resolve(path);
                 if (resource instanceof NonExistingResource) {
