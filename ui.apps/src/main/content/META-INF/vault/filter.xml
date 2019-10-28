@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <workspaceFilter version="1.0">
-    <filter root="/apps/aem-content-scoring">
-        <exclude pattern="/apps/aem-content-scoring/install" />
-    </filter>
+    <filter root="/apps/aem-content-scoring" />
 </workspaceFilter>

@@ -9,16 +9,26 @@ import java.util.stream.Collectors;
 
 import javax.servlet.Servlet;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.resource.NonExistingResource;
+import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.external.URIProvider;
+import org.apache.sling.api.resource.external.URIProvider.Scope;
+import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
+import org.apache.sling.settings.SlingSettingsService;
+import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
+import org.cru.contentscoring.core.provider.VanityPathUriProvider;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
-import com.day.cq.commons.Externalizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
@@ -28,6 +38,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
         "sling.servlet.methods=" + HttpConstants.METHOD_GET,
         "sling.servlet.paths=/bin/cru/url/mapper" })
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
+    URIProvider absolutePathUriProvider;
+    VanityPathUriProvider vanityPathUriProvider;
+
+    @Reference
+    private SlingSettingsService slingSettingsService;
+
+    @Activate
+    public void activate() {
+        String environment = determineEnvironment();
+
+        if (absolutePathUriProvider == null) {
+            absolutePathUriProvider = new AbsolutePathUriProvider(environment);
+        }
+        if (vanityPathUriProvider == null) {
+            vanityPathUriProvider = new VanityPathUriProvider(environment);
+        }
+    }
+
+    private String determineEnvironment() {
+        Set<String> possibleEnvironments = ImmutableSet.of("local", "uat", "prod");
+        for (String runMode : slingSettingsService.getRunModes()) {
+            if (possibleEnvironments.contains(runMode)) {
+                return runMode;
+            }
+        }
+        throw new IllegalStateException("Failed to determine environment");
+    }
+
     @Override
     protected void doGet(final SlingHttpServletRequest request, final SlingHttpServletResponse response) throws IOException {
         RequestParameter[] pathParameters = request.getRequestParameters("path");
@@ -38,14 +76,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        RequestParameter domainParameter = request.getRequestParameter("domain");
-        if (domainParameter == null) {
-            response.setStatus(400);
-            response.getWriter().write("Domain parameter is missing.");
-            return;
-        }
-
-        Set<String> urls = determineUrls(pathParameters, domainParameter, request.getResourceResolver());
+        Set<String> urls = determineUrls(pathParameters, request.getResourceResolver());
 
         response.setHeader("Content-Type", "application/json");
         ObjectMapper objectMapper = new ObjectMapper();
@@ -55,29 +86,24 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
 
     private Set<String> determineUrls(
         final RequestParameter[] pathParameters,
-        final RequestParameter domainParameter,
         final ResourceResolver resourceResolver) {
 
         List<String> paths = Arrays.stream(pathParameters)
             .map(RequestParameter::getString)
             .collect(Collectors.toList());
 
-        String domain = domainParameter.getString();
-
-        Externalizer externalizer = resourceResolver.adaptTo(Externalizer.class);
-
-
-        if (externalizer == null) {
-            throw new RuntimeException("Externalizer is null!");
-        }
-
         Set<String> urls = new HashSet<>();
         for (String path : paths) {
-            final String url = externalizer.externalLink(resourceResolver, domain, path);
-            if (resourceResolver.getResource(path) != null) {
-                urls.add(url + ".html");
+            Resource resource = resourceResolver.getResource(path);
+            if (resource != null) {
+                urls.add(absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ).toString());
             } else {
-                urls.add(url);
+                resource = resourceResolver.resolve(path);
+                if (resource instanceof NonExistingResource) {
+                    continue;
+                }
+                // This means that a resource exists that can be mapped by the given vanity URL
+                urls.add(vanityPathUriProvider.toURI(path, resourceResolver).toString());
             }
         }
 
