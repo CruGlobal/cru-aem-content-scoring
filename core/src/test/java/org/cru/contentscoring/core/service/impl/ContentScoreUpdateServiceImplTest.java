@@ -23,7 +23,6 @@ import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
@@ -77,9 +76,8 @@ public class ContentScoreUpdateServiceImplTest {
 
     @Before
     public void setup() throws Exception {
-        String site = "https://page.com";
         String pagePath = "/content/test/us/en/page-path";
-        page = mockPage(site, pagePath, pagePath, site + pagePath);
+        page = mockPage(pagePath);
         session = mock(Session.class);
     }
 
@@ -166,7 +164,7 @@ public class ContentScoreUpdateServiceImplTest {
     public void testDeterminePageUrlsToSendNoVanities() throws Exception {
         String site = "https://page.com";
         String pagePath = "/content/test/us/en/page-path";
-        Page page = mockPage(site, pagePath, pagePath, site + pagePath);
+        Page page = mockPage(pagePath);
 
         mockResponse(Sets.newHashSet(site + pagePath + HTML_EXTENSION));
 
@@ -181,7 +179,7 @@ public class ContentScoreUpdateServiceImplTest {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
 
-        Page page = mockPage(site, pagePath, vanityPath, site + vanityPath);
+        Page page = mockPage(pagePath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
         Map<String, Object> properties = new HashMap<>();
@@ -205,7 +203,7 @@ public class ContentScoreUpdateServiceImplTest {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
 
-        Page page = mockPage(site, pagePath, vanityPath, site + vanityPath);
+        Page page = mockPage(pagePath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
         Map<String, Object> properties = new HashMap<>();
@@ -230,7 +228,7 @@ public class ContentScoreUpdateServiceImplTest {
         String secondVanity = "/content/test/us/en/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
 
-        Page page = mockPage(site, pagePath, vanityPath, site + vanityPath);
+        Page page = mockPage(pagePath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
         Map<String, Object> properties = new HashMap<>();
@@ -256,7 +254,7 @@ public class ContentScoreUpdateServiceImplTest {
         String vanityPath = "/vanity-url";
         String pagePath = "/content/test/us/en/page-path";
 
-        Page page = mockPage(site, pagePath, vanityPath, site + vanityPath);
+        Page page = mockPage(pagePath);
         when(page.getVanityUrl()).thenReturn(vanityPath);
 
         Map<String, Object> properties = new HashMap<>();
@@ -292,7 +290,7 @@ public class ContentScoreUpdateServiceImplTest {
         String pagePath = "/content/test/us/en/page-path";
         String site = "https://page.com";
 
-        Page page = mockPage(site, pagePath, pagePath, site + pagePath);
+        Page page = mockPage(pagePath);
 
         mockResponse(Sets.newHashSet(site + pagePath + HTML_EXTENSION));
 
@@ -308,7 +306,7 @@ public class ContentScoreUpdateServiceImplTest {
     public void testExperienceFragment() throws Exception {
         String xfPath = "/content/experience-fragments/shared/en/path";
 
-        Page page = mockPage(null, xfPath, null, null);
+        Page page = mockPage(xfPath);
         Resource jcrContent = page.getContentResource();
         when(jcrContent.getResourceType()).thenReturn(ExperienceFragmentUtil.XF_TYPE);
 
@@ -320,7 +318,7 @@ public class ContentScoreUpdateServiceImplTest {
     public void testExperienceFragmentVariation() throws Exception {
         String path = "/content/experience-fragments/shared/en/path/variation";
 
-        Page page = mockPage(null, path, null, null);
+        Page page = mockPage(path);
         Resource jcrContent = page.getContentResource();
         when(jcrContent.getResourceType()).thenReturn("Site/components/structure/xfpage");
         Map<String, Object> properties = jcrContent.getValueMap();
@@ -360,18 +358,10 @@ public class ContentScoreUpdateServiceImplTest {
         Client client = mock(Client.class);
         when(client.target(anyString())).thenReturn(webTarget);
 
-        ClientBuilder clientBuilder = mock(ClientBuilder.class);
-        when(clientBuilder.register(any())).thenReturn(clientBuilder);
-        when(clientBuilder.build()).thenReturn(client);
-        updateService.clientBuilder = clientBuilder;
+        updateService.client = client;
     }
 
-    private Page mockPage(
-        final String site,
-        final String pagePath,
-        final String externalizerPath,
-        final String externalLink) throws Exception {
-
+    private Page mockPage(final String pagePath) throws Exception {
         Page page = mock(Page.class);
         when(page.getPath()).thenReturn(pagePath);
 

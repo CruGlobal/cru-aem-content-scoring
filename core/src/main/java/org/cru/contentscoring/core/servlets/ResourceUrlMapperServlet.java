@@ -1,6 +1,7 @@
 package org.cru.contentscoring.core.servlets;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -96,14 +97,20 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         for (String path : paths) {
             Resource resource = resourceResolver.getResource(path);
             if (resource != null) {
-                urls.add(absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ).toString());
+                URI absoluteUri = absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ);
+                if (absoluteUri != null) {
+                    urls.add(absoluteUri.toString());
+                }
             } else {
                 resource = resourceResolver.resolve(path);
                 if (resource instanceof NonExistingResource) {
                     continue;
                 }
                 // This means that a resource exists that can be mapped by the given vanity URL
-                urls.add(vanityPathUriProvider.toURI(path, resourceResolver).toString());
+                URI vanityUri = vanityPathUriProvider.toURI(path, resourceResolver);
+                if (vanityUri != null) {
+                    urls.add(vanityUri.toString());
+                }
             }
         }
 
