@@ -23,7 +23,6 @@ import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
@@ -360,10 +359,7 @@ public class ContentScoreUpdateServiceImplTest {
         Client client = mock(Client.class);
         when(client.target(anyString())).thenReturn(webTarget);
 
-        ClientBuilder clientBuilder = mock(ClientBuilder.class);
-        when(clientBuilder.register(any())).thenReturn(clientBuilder);
-        when(clientBuilder.build()).thenReturn(client);
-        updateService.clientBuilder = clientBuilder;
+        updateService.client = client;
     }
 
     private Page mockPage(

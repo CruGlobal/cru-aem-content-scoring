@@ -96,7 +96,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     private UUID apiKey;
     private String urlMapperEndpoint;
 
-    ClientBuilder clientBuilder;
+    Client client;
 
 
     @Reference
@@ -118,7 +118,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         Preconditions.checkNotNull(urlMapperEndpoint, "URL Mapper Endpoint must be configured in aem_osgi_config.");
 
         startQueueManager(config);
-        clientBuilder = ClientBuilder.newBuilder();
+        client = ClientBuilder.newBuilder().build().register(JacksonJsonProvider.class);
     }
 
     private void startQueueManager(final Map<String, Object> config) {
@@ -226,7 +226,6 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     }
 
     private Set<String> getUrlsFromPaths(final Set<String> paths) {
-        Client client = clientBuilder.register(JacksonJsonProvider.class).build();
         WebTarget webTarget = client.target(urlMapperEndpoint);
 
         for (String path : paths) {
