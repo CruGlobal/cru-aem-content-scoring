@@ -199,8 +199,8 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
         int score = Integer.parseInt(scoreString);
         Preconditions.checkArgument(
-            score >= 0 && score <= 8,
-            "Score must be between 0 and 8, but is " + score);
+            score >= 0 && score <= 10,
+            "Score must be between 0 and 10, but is " + score);
 
         return score;
     }
