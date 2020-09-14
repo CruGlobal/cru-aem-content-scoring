@@ -9,6 +9,7 @@ import org.apache.sling.api.resource.external.URIProvider;
 import org.apache.sling.api.resource.external.URIProvider.Scope;
 import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
+import org.cru.contentscoring.core.util.SystemUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,6 +21,7 @@ import java.net.URI;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,10 +35,14 @@ public class ResourceUrlMapperServletTest {
     private ResourceResolver resourceResolver;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         resourceResolver = mock(ResourceResolver.class);
         servlet.absolutePathUriProvider = mock(URIProvider.class);
         servlet.vanityPathUriProvider = mock(VanityPathUriProvider.class);
+
+        SystemUtils mockSystemUtils = mock(SystemUtils.class);
+        when(mockSystemUtils.getResourceResolver(anyString())).thenReturn(resourceResolver);
+        servlet.systemUtils = mockSystemUtils;
     }
 
     @Test
