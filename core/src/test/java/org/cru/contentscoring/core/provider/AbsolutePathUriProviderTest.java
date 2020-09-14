@@ -4,10 +4,7 @@ import com.google.common.collect.Lists;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.api.resource.external.URIProvider;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
-import org.cru.contentscoring.core.util.SystemUtils;
-import org.cru.contentscoring.core.util.SystemUtilsImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,7 +16,6 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,11 +24,9 @@ public class AbsolutePathUriProviderTest {
     private ResourceResolver resourceResolver;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         resourceResolver = mock(ResourceResolver.class);
-        SystemUtils mockSystemUtils = mock(SystemUtils.class);
-        when(mockSystemUtils.getResourceResolver(anyString())).thenReturn(resourceResolver);
-        absolutePathUriProvider = new AbsolutePathUriProvider("local", mockSystemUtils);
+        absolutePathUriProvider = new AbsolutePathUriProvider("local");
     }
 
     @Test
@@ -41,7 +35,7 @@ public class AbsolutePathUriProviderTest {
         when(resource.getResourceResolver()).thenReturn(resourceResolver);
         mockSlingMaps();
 
-        URI uri = absolutePathUriProvider.toURI(resource, URIProvider.Scope.EXTERNAL, URIProvider.Operation.READ);
+        URI uri = absolutePathUriProvider.toURI(resource, resourceResolver);
 
         assertThat(uri.toString(), is(equalTo("https://primary.site.org/content/primary/us/en/wherever.html")));
     }

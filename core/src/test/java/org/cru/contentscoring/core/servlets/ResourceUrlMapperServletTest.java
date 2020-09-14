@@ -5,9 +5,7 @@ import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.external.URIProvider;
-import org.apache.sling.api.resource.external.URIProvider.Scope;
-import org.apache.sling.api.resource.external.URIProvider.Operation;
+import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.cru.contentscoring.core.util.SystemUtils;
 import org.junit.Before;
@@ -37,7 +35,7 @@ public class ResourceUrlMapperServletTest {
     @Before
     public void setup() throws Exception {
         resourceResolver = mock(ResourceResolver.class);
-        servlet.absolutePathUriProvider = mock(URIProvider.class);
+        servlet.absolutePathUriProvider = mock(AbsolutePathUriProvider.class);
         servlet.vanityPathUriProvider = mock(VanityPathUriProvider.class);
 
         SystemUtils mockSystemUtils = mock(SystemUtils.class);
@@ -76,7 +74,7 @@ public class ResourceUrlMapperServletTest {
         Resource resource = mock(Resource.class);
         when(resourceResolver.getResource(absolutePath)).thenReturn(resource);
 
-        when(servlet.absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ))
+        when(servlet.absolutePathUriProvider.toURI(resource, resourceResolver))
             .thenReturn(new URI(BASE_URL + absolutePath + HTML_EXTENSION));
 
         SlingHttpServletResponse response = mock(SlingHttpServletResponse.class);
@@ -109,7 +107,7 @@ public class ResourceUrlMapperServletTest {
         when(resourceResolver.getResource(absolutePath)).thenReturn(resource);
         when(resourceResolver.resolve(vanityPath)).thenReturn(resource);
 
-        when(servlet.absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ))
+        when(servlet.absolutePathUriProvider.toURI(resource, resourceResolver))
             .thenReturn(new URI(BASE_URL + absolutePath + HTML_EXTENSION));
         when(servlet.vanityPathUriProvider.toURI(vanityPath, resourceResolver))
             .thenReturn(new URI(BASE_URL + vanityPath));
