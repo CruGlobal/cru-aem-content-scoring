@@ -6,7 +6,6 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
 import org.cru.contentscoring.core.util.SystemUtils;
-import org.cru.contentscoring.core.util.SystemUtilsImpl;
 import org.junit.Before;
 import org.junit.Test;
 
