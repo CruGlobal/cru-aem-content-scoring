@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -25,11 +26,14 @@ import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
+import org.cru.contentscoring.core.util.SystemUtils;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
@@ -40,21 +44,28 @@ import org.osgi.service.component.annotations.Reference;
         "sling.servlet.paths=/bin/cru/url/mapper",
         "sling.servlet.extensions=txt"})
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceUrlMapperServlet.class);
+
+    private static final String SUBSERVICE = "contentScoreSync";
+
     URIProvider absolutePathUriProvider;
     VanityPathUriProvider vanityPathUriProvider;
 
     @Reference
     private SlingSettingsService slingSettingsService;
 
+    @Reference
+    SystemUtils systemUtils;
+
     @Activate
     public void activate() {
         String environment = determineEnvironment();
 
         if (absolutePathUriProvider == null) {
-            absolutePathUriProvider = new AbsolutePathUriProvider(environment);
+            absolutePathUriProvider = new AbsolutePathUriProvider(environment, systemUtils);
         }
         if (vanityPathUriProvider == null) {
-            vanityPathUriProvider = new VanityPathUriProvider(environment);
+            vanityPathUriProvider = new VanityPathUriProvider(environment, systemUtils);
         }
     }
 
@@ -78,12 +89,17 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        Set<String> urls = determineUrls(pathParameters, request.getResourceResolver());
+        try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)) {
+            Set<String> urls = determineUrls(pathParameters, resourceResolver);
 
-        response.setHeader("Content-Type", "application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(urls);
-        response.getWriter().write(json);
+            response.setHeader("Content-Type", "application/json");
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(urls);
+            response.getWriter().write(json);
+        } catch (LoginException e) {
+            LOG.error("Failed to get resource resolver for {}", SUBSERVICE, e);
+            response.sendError(500);
+        }
     }
 
     private Set<String> determineUrls(

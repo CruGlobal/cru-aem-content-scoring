@@ -5,6 +5,7 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
+import org.cru.contentscoring.core.util.SystemUtils;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,6 +18,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,9 +27,11 @@ public class VanityPathUriProviderTest {
     private ResourceResolver resourceResolver;
 
     @Before
-    public void setup() {
+    public void setup() throws Exception {
         resourceResolver = mock(ResourceResolver.class);
-        vanityPathUriProvider = new VanityPathUriProvider("local");
+        SystemUtils mockSystemUtils = mock(SystemUtils.class);
+        when(mockSystemUtils.getResourceResolver(anyString())).thenReturn(resourceResolver);
+        vanityPathUriProvider = new VanityPathUriProvider("local", mockSystemUtils);
         mockSlingMaps();
     }
 

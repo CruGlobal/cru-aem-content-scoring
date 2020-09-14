@@ -1,9 +1,11 @@
 package org.cru.contentscoring.core.provider;
 
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.external.URIProvider;
+import org.cru.contentscoring.core.util.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,33 +16,40 @@ import java.util.Objects;
 public class AbsolutePathUriProvider implements URIProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AbsolutePathUriProvider.class);
 
-    private String environment;
+    private static final String SUBSERVICE = "contentScoreSync";
 
-    public AbsolutePathUriProvider(final String environment) {
+    private String environment;
+    private SystemUtils systemUtils;
+
+    public AbsolutePathUriProvider(final String environment, final SystemUtils systemUtils) {
         this.environment = environment;
+        this.systemUtils = systemUtils;
     }
 
     @Override
     public URI toURI(final Resource resource, final Scope scope, final Operation operation) {
         String path = resource.getPath();
-        ResourceResolver resourceResolver = resource.getResourceResolver();
+        try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)) {
+            UriProviderUtil util = UriProviderUtil.getInstance(environment);
+            Resource slingMap = util.determineSlingMap(path, resourceResolver);
 
-        UriProviderUtil util = UriProviderUtil.getInstance(environment);
-        Resource slingMap = util.determineSlingMap(path, resourceResolver);
+            if (slingMap != null) {
+                LOG.debug("Found a sling map");
+                String protocol = Objects.requireNonNull(slingMap.getParent()).getName();
+                String domain = slingMap.getName();
 
-        if (slingMap != null) {
-            String protocol = Objects.requireNonNull(slingMap.getParent()).getName();
-            String domain = slingMap.getName();
-
-            try {
-                return new URIBuilder()
-                    .setScheme(protocol)
-                    .setHost(domain)
-                    .setPath(path + ".html")
-                    .build();
-            } catch (URISyntaxException e) {
-                LOG.error("Bad URI", e);
+                try {
+                    return new URIBuilder()
+                        .setScheme(protocol)
+                        .setHost(domain)
+                        .setPath(path + ".html")
+                        .build();
+                } catch (URISyntaxException e) {
+                    LOG.error("Bad URI", e);
+                }
             }
+        } catch (LoginException e) {
+            LOG.error("Failed to get resource resolver for {}", SUBSERVICE);
         }
 
         return null;
