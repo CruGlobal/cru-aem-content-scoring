@@ -18,9 +18,6 @@ import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.external.URIProvider;
-import org.apache.sling.api.resource.external.URIProvider.Scope;
-import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.apache.sling.settings.SlingSettingsService;
@@ -48,7 +45,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
 
     private static final String SUBSERVICE = "contentScoreSync";
 
-    URIProvider absolutePathUriProvider;
+    AbsolutePathUriProvider absolutePathUriProvider;
     VanityPathUriProvider vanityPathUriProvider;
 
     @Reference
@@ -62,10 +59,10 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         String environment = determineEnvironment();
 
         if (absolutePathUriProvider == null) {
-            absolutePathUriProvider = new AbsolutePathUriProvider(environment, systemUtils);
+            absolutePathUriProvider = new AbsolutePathUriProvider(environment);
         }
         if (vanityPathUriProvider == null) {
-            vanityPathUriProvider = new VanityPathUriProvider(environment, systemUtils);
+            vanityPathUriProvider = new VanityPathUriProvider(environment);
         }
     }
 
@@ -114,7 +111,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         for (String path : paths) {
             Resource resource = resourceResolver.getResource(path);
             if (resource != null) {
-                URI absoluteUri = absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ);
+                URI absoluteUri = absolutePathUriProvider.toURI(resource, resourceResolver);
                 if (absoluteUri != null) {
                     urls.add(absoluteUri.toString());
                 }
