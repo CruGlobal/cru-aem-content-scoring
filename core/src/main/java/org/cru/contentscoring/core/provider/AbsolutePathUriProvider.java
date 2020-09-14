@@ -25,7 +25,6 @@ public class AbsolutePathUriProvider {
         Resource slingMap = util.determineSlingMap(path, resourceResolver);
 
         if (slingMap != null) {
-            LOG.debug("Found a sling map");
             String protocol = Objects.requireNonNull(slingMap.getParent()).getName();
             String domain = slingMap.getName();
 
