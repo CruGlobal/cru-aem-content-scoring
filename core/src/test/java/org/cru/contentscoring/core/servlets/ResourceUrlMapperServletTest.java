@@ -29,7 +29,7 @@ public class ResourceUrlMapperServletTest {
     private static final String BASE_URL = "http://test.com";
     private static final String HTML_EXTENSION = ".html";
 
-    private ResourceUrlMapperServlet servlet = new ResourceUrlMapperServlet();
+    private final ResourceUrlMapperServlet servlet = new ResourceUrlMapperServlet();
     private ResourceResolver resourceResolver;
 
     @Before
@@ -127,7 +127,7 @@ public class ResourceUrlMapperServletTest {
         assertThat(json.contains(BASE_URL + vanityPath), is(equalTo(true)));
     }
 
-    private class StringParameter implements RequestParameter {
+    private static class StringParameter implements RequestParameter {
         String name;
         String value;
 

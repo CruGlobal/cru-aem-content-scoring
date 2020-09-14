@@ -13,7 +13,7 @@ import java.util.Objects;
 public class AbsolutePathUriProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AbsolutePathUriProvider.class);
 
-    private String environment;
+    private final String environment;
 
     public AbsolutePathUriProvider(final String environment) {
         this.environment = environment;
