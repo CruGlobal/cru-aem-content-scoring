@@ -14,22 +14,23 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
+import org.apache.sling.api.resource.LoginException;
 import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.external.URIProvider;
-import org.apache.sling.api.resource.external.URIProvider.Scope;
-import org.apache.sling.api.resource.external.URIProvider.Operation;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
+import org.cru.contentscoring.core.util.SystemUtils;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.osgi.service.component.annotations.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This resource url mapper servlet is used to determine the external URL(s) of a given resource
@@ -37,13 +38,21 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = Servlet.class, property = {
         "sling.servlet.methods=" + HttpConstants.METHOD_GET,
-        "sling.servlet.paths=/bin/cru/url/mapper" })
+        "sling.servlet.paths=/bin/cru/url/mapper",
+        "sling.servlet.extensions=txt"})
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
-    URIProvider absolutePathUriProvider;
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceUrlMapperServlet.class);
+
+    private static final String SUBSERVICE = "contentScoreSync";
+
+    AbsolutePathUriProvider absolutePathUriProvider;
     VanityPathUriProvider vanityPathUriProvider;
 
     @Reference
     private SlingSettingsService slingSettingsService;
+
+    @Reference
+    SystemUtils systemUtils;
 
     @Activate
     public void activate() {
@@ -77,12 +86,17 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
             return;
         }
 
-        Set<String> urls = determineUrls(pathParameters, request.getResourceResolver());
+        try (ResourceResolver resourceResolver = systemUtils.getResourceResolver(SUBSERVICE)) {
+            Set<String> urls = determineUrls(pathParameters, resourceResolver);
 
-        response.setHeader("Content-Type", "application/json");
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(urls);
-        response.getWriter().write(json);
+            response.setHeader("Content-Type", "application/json");
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(urls);
+            response.getWriter().write(json);
+        } catch (LoginException e) {
+            LOG.error("Failed to get resource resolver for {}", SUBSERVICE, e);
+            response.sendError(500);
+        }
     }
 
     private Set<String> determineUrls(
@@ -97,7 +111,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         for (String path : paths) {
             Resource resource = resourceResolver.getResource(path);
             if (resource != null) {
-                URI absoluteUri = absolutePathUriProvider.toURI(resource, Scope.EXTERNAL, Operation.READ);
+                URI absoluteUri = absolutePathUriProvider.toURI(resource, resourceResolver);
                 if (absoluteUri != null) {
                     urls.add(absoluteUri.toString());
                 }

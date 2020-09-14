@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.api.resource.external.URIProvider;
 import org.apache.sling.api.wrappers.ValueMapDecorator;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +35,7 @@ public class AbsolutePathUriProviderTest {
         when(resource.getResourceResolver()).thenReturn(resourceResolver);
         mockSlingMaps();
 
-        URI uri = absolutePathUriProvider.toURI(resource, URIProvider.Scope.EXTERNAL, URIProvider.Operation.READ);
+        URI uri = absolutePathUriProvider.toURI(resource, resourceResolver);
 
         assertThat(uri.toString(), is(equalTo("https://primary.site.org/content/primary/us/en/wherever.html")));
     }

@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.provider;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.external.URIProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,20 +10,17 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-public class AbsolutePathUriProvider implements URIProvider {
+public class AbsolutePathUriProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AbsolutePathUriProvider.class);
 
-    private String environment;
+    private final String environment;
 
     public AbsolutePathUriProvider(final String environment) {
         this.environment = environment;
     }
 
-    @Override
-    public URI toURI(final Resource resource, final Scope scope, final Operation operation) {
+    public URI toURI(final Resource resource, final ResourceResolver resourceResolver) {
         String path = resource.getPath();
-        ResourceResolver resourceResolver = resource.getResourceResolver();
-
         UriProviderUtil util = UriProviderUtil.getInstance(environment);
         Resource slingMap = util.determineSlingMap(path, resourceResolver);
 

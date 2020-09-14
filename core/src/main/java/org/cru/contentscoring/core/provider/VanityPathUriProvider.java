@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.provider;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.resource.external.URIProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,18 +10,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
-public class VanityPathUriProvider implements URIProvider {
+public class VanityPathUriProvider {
     private static final Logger LOG = LoggerFactory.getLogger(VanityPathUriProvider.class);
 
-    private String environment;
+    private final String environment;
 
     public VanityPathUriProvider(final String environment) {
         this.environment = environment;
-    }
-
-    @Override
-    public URI toURI(final Resource resource, final Scope scope, final Operation operation) {
-        return toURI(resource.getPath(), resource.getResourceResolver());
     }
 
     public URI toURI(final String path, final ResourceResolver resourceResolver) {
