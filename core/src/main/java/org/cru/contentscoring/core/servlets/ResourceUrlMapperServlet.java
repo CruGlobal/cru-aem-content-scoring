@@ -37,7 +37,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = Servlet.class, property = {
         "sling.servlet.methods=" + HttpConstants.METHOD_GET,
-        "sling.servlet.paths=/bin/cru/url/mapper" })
+        "sling.servlet.paths=/bin/cru/url/mapper",
+        "sling.servlet.extensions=txt"})
 public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     URIProvider absolutePathUriProvider;
     VanityPathUriProvider vanityPathUriProvider;
