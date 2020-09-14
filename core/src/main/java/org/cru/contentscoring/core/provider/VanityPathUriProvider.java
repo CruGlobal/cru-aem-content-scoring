@@ -13,7 +13,7 @@ import java.util.Objects;
 public class VanityPathUriProvider {
     private static final Logger LOG = LoggerFactory.getLogger(VanityPathUriProvider.class);
 
-    private String environment;
+    private final String environment;
 
     public VanityPathUriProvider(final String environment) {
         this.environment = environment;
