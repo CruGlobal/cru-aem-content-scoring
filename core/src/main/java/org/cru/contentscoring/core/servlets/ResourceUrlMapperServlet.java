@@ -67,7 +67,7 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     }
 
     private String determineEnvironment() {
-        Set<String> possibleEnvironments = ImmutableSet.of("local", "uat", "prod");
+        Set<String> possibleEnvironments = ImmutableSet.of("dev", "stage", "prod");
         for (String runMode : slingSettingsService.getRunModes()) {
             if (possibleEnvironments.contains(runMode)) {
                 return runMode;
