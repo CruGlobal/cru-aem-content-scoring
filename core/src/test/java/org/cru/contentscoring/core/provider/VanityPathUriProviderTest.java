@@ -27,7 +27,7 @@ public class VanityPathUriProviderTest {
     @Before
     public void setup() {
         resourceResolver = mock(ResourceResolver.class);
-        vanityPathUriProvider = new VanityPathUriProvider("local");
+        vanityPathUriProvider = new VanityPathUriProvider("dev");
         mockSlingMaps();
     }
 
@@ -47,7 +47,7 @@ public class VanityPathUriProviderTest {
         Resource primarySiteMap = mockResource(null, "primary.site.org", "/content/primary", false, null);
         Resource primarySiteRedirect = mockResource(null, "primary.site_org", "/content/primary/us/en", false, null);
 
-        String httpsPath = "/etc/map.publish.local/https";
+        String httpsPath = "/etc/map.publish.dev/https";
         Resource httpsMap = mockResource(
             httpsPath,
             "https",
@@ -61,7 +61,7 @@ public class VanityPathUriProviderTest {
         Resource otherSiteMap = mockResource(null, "other.site.com", "/content/other", false, null);
         Resource otherSiteRedirect = mockResource(null, "other.site_com", "/content/other/us/en", false, null);
 
-        String httpPath = "/etc/map.publish.local/http";
+        String httpPath = "/etc/map.publish.dev/http";
         Resource httpMap = mockResource(
             httpPath,
             "http",
