@@ -7,6 +7,7 @@ import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.event.jobs.Job;
 import org.apache.sling.event.jobs.consumer.JobConsumer;
 import org.apache.sling.settings.SlingSettingsService;
+import org.cru.commons.event.service.impl.ReplicationListenerOnPublishServiceImpl;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -19,7 +20,7 @@ import com.day.cq.wcm.api.Page;
 import com.day.cq.wcm.api.PageManager;
 
 @Component(service = JobConsumer.class, property = {
-        JobConsumer.PROPERTY_TOPICS + "=" + ReplicationEventHandler.SCORING_JOB_NAME})
+        JobConsumer.PROPERTY_TOPICS + "=" + ReplicationListenerOnPublishServiceImpl.SCORING_JOB_NAME})
 public class IndexerJobConsumer implements JobConsumer {
    
     private Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
@@ -38,7 +39,8 @@ public class IndexerJobConsumer implements JobConsumer {
             return JobResult.CANCEL;
         }
 
-        ReplicationAction action = (ReplicationAction) job.getProperty(ReplicationEventHandler.EVENT_PARAM);
+        ReplicationAction action =
+            (ReplicationAction) job.getProperty(ReplicationListenerOnPublishServiceImpl.EVENT_PARAM);
 
         try (ResourceResolver resourceResolver = resolverFactory.getServiceResourceResolver(null)) {
             Session session = resourceResolver.adaptTo(Session.class);
