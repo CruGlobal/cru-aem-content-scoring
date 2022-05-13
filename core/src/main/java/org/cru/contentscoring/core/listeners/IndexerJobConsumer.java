@@ -11,6 +11,7 @@ import org.cru.commons.event.service.impl.ReplicationListenerOnPublishServiceImp
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,19 +20,22 @@ import com.day.cq.replication.ReplicationActionType;
 import com.day.cq.wcm.api.Page;
 import com.day.cq.wcm.api.PageManager;
 
-@Component(service = JobConsumer.class, property = {
+@Component(
+    service = JobConsumer.class,
+    immediate = true,
+    property = {
         JobConsumer.PROPERTY_TOPICS + "=" + ReplicationListenerOnPublishServiceImpl.SCORING_JOB_NAME})
 public class IndexerJobConsumer implements JobConsumer {
    
     private static final Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
 
-    @Reference
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private ResourceResolverFactory resolverFactory;
 
-    @Reference
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private ContentScoreUpdateService service;
 
-    @Reference
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private SlingSettingsService slingSettingsService;
 
     public JobResult process(final Job job) {
