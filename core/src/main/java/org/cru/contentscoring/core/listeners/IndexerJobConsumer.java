@@ -23,7 +23,7 @@ import com.day.cq.wcm.api.PageManager;
         JobConsumer.PROPERTY_TOPICS + "=" + ReplicationListenerOnPublishServiceImpl.SCORING_JOB_NAME})
 public class IndexerJobConsumer implements JobConsumer {
    
-    private Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
 
     @Reference
     private ResourceResolverFactory resolverFactory;
