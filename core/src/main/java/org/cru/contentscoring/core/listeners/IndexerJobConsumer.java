@@ -33,7 +33,7 @@ public class IndexerJobConsumer implements JobConsumer {
     private ResourceResolverFactory resolverFactory;
 
     @Reference(policyOption = ReferencePolicyOption.GREEDY)
-    private ContentScoreUpdateService service;
+    private ContentScoreUpdateService contentScoreUpdateService;
 
     @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private SlingSettingsService slingSettingsService;
@@ -60,7 +60,7 @@ public class IndexerJobConsumer implements JobConsumer {
 
                     LOG.debug("{} path={} ", action.getType(), action.getPath());
 
-                    service.updateContentScore(page);
+                    contentScoreUpdateService.updateContentScore(page);
                     session.save();
                 }
             }
