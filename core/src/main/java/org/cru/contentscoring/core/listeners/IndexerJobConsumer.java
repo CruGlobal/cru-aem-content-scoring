@@ -40,11 +40,13 @@ public class IndexerJobConsumer implements JobConsumer {
 
     public JobResult process(final Job job) {
         if (!slingSettingsService.getRunModes().contains("author")) {
+            LOG.debug("Not on the author environment, skipping");
             return JobResult.CANCEL;
         }
 
         ReplicationAction action =
             (ReplicationAction) job.getProperty(ReplicationListenerOnPublishServiceImpl.EVENT_PARAM);
+        LOG.debug("Processing content scoring job on: {}", action.getPath());
 
         try (ResourceResolver resourceResolver = resolverFactory.getServiceResourceResolver(null)) {
             Session session = resourceResolver.adaptTo(Session.class);
@@ -63,6 +65,8 @@ public class IndexerJobConsumer implements JobConsumer {
                     contentScoreUpdateService.updateContentScore(page);
                     session.save();
                 }
+            } else {
+                LOG.debug("Page was null for {}", action.getPath());
             }
             return JobResult.OK;
         } catch (Exception e) {
