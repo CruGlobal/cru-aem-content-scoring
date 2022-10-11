@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jcr:root xmlns:sling="http://sling.apache.org/jcr/sling/1.0" xmlns:jcr="http://www.jcp.org/jcr/1.0"
           jcr:primaryType="sling:OsgiConfig"
-          apiEndpoint="https://content-scoring.cru.org/api/"
+          apiEndpoint="http://localhost:3000/api"
           waitTime="5000"
           maxRetries="3"
           errorEmailRecipients=""
-          urlMapperEndpoint="https://stage.cru.org/bin/cru/url/mapper.txt"/>
+          urlMapperEndpoint="http://local.cru.org:4503/bin/cru/url/mapper.txt"/>
