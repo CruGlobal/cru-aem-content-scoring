@@ -91,6 +91,26 @@
             <!-- V A U L T   P A C K A G E   P L U G I N                                -->
             <!-- ====================================================================== -->
             <plugin>
+                <groupId>org.apache.jackrabbit</groupId>
+                <artifactId>filevault-package-maven-plugin</artifactId>
+                <configuration>
+                    <properties>
+                        <cloudManagerTarget>none</cloudManagerTarget>
+                    </properties>
+                    <group>Cru</group>
+                    <name>aem-content-scoring.ui.apps</name>
+                    <packageType>application</packageType>
+                    <repositoryStructurePackages>
+                        <repositoryStructurePackage>
+                            <groupId>org.cru</groupId>
+                            <artifactId>aem-content-scoring.ui.apps.structure</artifactId>
+                        </repositoryStructurePackage>
+                    </repositoryStructurePackages>
+                    <dependencies>
+                    </dependencies>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.day.jcr.vault</groupId>
                 <artifactId>content-package-maven-plugin</artifactId>
                 <extensions>true</extensions>
@@ -124,6 +144,13 @@
             <groupId>org.cru</groupId>
             <artifactId>aem-content-scoring.core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.cru</groupId>
+            <artifactId>aem-content-scoring.ui.apps.structure</artifactId>
+            <version>${project.version}</version>
+            <type>zip</type>
         </dependency>
 
         <dependency>
