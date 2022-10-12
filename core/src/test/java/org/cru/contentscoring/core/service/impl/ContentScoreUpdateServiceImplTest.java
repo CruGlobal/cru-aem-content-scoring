@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.service.impl;
 import com.day.cq.tagging.Tag;
 import com.day.cq.wcm.api.Page;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -34,15 +33,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_ENDPOINT;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_KEY_LOCATION;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.ERROR_EMAIL_RECIPIENTS;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.MAX_RETRIES;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.URL_MAPPER_ENDPOINT;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.VANITY_PATH;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.VANITY_REDIRECT;
-import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.WAIT_TIME;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.core.Is.is;
@@ -84,15 +77,15 @@ public class ContentScoreUpdateServiceImplTest {
 
     @Test
     public void testActivation() {
-        Map<String, Object> config = Maps.newHashMap();
-        config.put(API_ENDPOINT, "http://somewhere-out.there.com");
-        config.put(API_KEY_LOCATION, UUID.randomUUID().toString());
-        config.put(WAIT_TIME, 10000L);
-        config.put(MAX_RETRIES, 5);
-        config.put(ERROR_EMAIL_RECIPIENTS, "some.email@example.com,another.email@example.com");
+        ContentScoreUpdateServiceImpl.Config config = mock(ContentScoreUpdateServiceImpl.Config.class);
+        when(config.apiEndpoint()).thenReturn("http://somewhere-out.there.com");
+        when(config.contentScoringApiKey()).thenReturn(UUID.randomUUID().toString());
+        when(config.waitTime()).thenReturn(10000L);
+        when(config.maxRetries()).thenReturn(5);
+        when(config.errorEmailRecipients()).thenReturn("some.email@example.com,another.email@example.com");
 
         String urlMapperEndpoint = "http://local.cru.org:4503/bin/cru/url/mapper.txt";
-        config.put(URL_MAPPER_ENDPOINT, urlMapperEndpoint);
+        when(config.urlMapperEndpoint()).thenReturn(urlMapperEndpoint);
 
         updateService.activate(config);
         assertThat(ContentScoreUpdateServiceImpl.internalQueueManager, is(not(nullValue())));

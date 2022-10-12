@@ -3,7 +3,6 @@ package org.cru.contentscoring.core.service.impl;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -17,7 +16,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ValueMap;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.cru.contentscoring.core.models.ContentScoreUpdateRequest;
 import org.cru.contentscoring.core.queue.UploadQueue;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
@@ -82,20 +80,12 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     static final String CONTENT_SCORE_UPDATED = "contentScoreLastUpdated";
 
-    static final String API_ENDPOINT = "apiEndpoint";
     private String apiEndpoint;
 
     private static final Long DEFAULT_WAIT_TIME = 5L * 1000L;
-    static final String WAIT_TIME = "waitTime";
 
     private static final Integer DEFAULT_MAX_RETRIES = 3;
-    static final String MAX_RETRIES = "maxRetries";
 
-    static final String ERROR_EMAIL_RECIPIENTS = "errorEmailRecipients";
-
-    static final String URL_MAPPER_ENDPOINT = "urlMapperEndpoint";
-
-    static final String API_KEY_LOCATION = "contentScoringApiKey";
     static final String VANITY_PATH = "sling:vanityPath";
     static final String VANITY_REDIRECT = "sling:redirect";
     private UUID apiKey;
@@ -111,25 +101,31 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
     static Thread queueManagerThread;
 
     @Activate
-    public void activate(final Map<String, Object> config) {
-        apiEndpoint = PropertiesUtil.toString(config.get(API_ENDPOINT), null);
+    public void activate(final Config config) {
+        apiEndpoint = config.apiEndpoint();
         LOG.debug("configure: apiEndpoint='{}''", apiEndpoint);
 
-        String apiKeyString = PropertiesUtil.toString(config.get(API_KEY_LOCATION), null);
+        String apiKeyString = config.contentScoringApiKey();
         Preconditions.checkNotNull(apiKeyString, "API Key is null!");
         apiKey = UUID.fromString(apiKeyString);
 
-        urlMapperEndpoint = (String) config.get(URL_MAPPER_ENDPOINT);
+        urlMapperEndpoint = config.urlMapperEndpoint();
         Preconditions.checkNotNull(urlMapperEndpoint, "URL Mapper Endpoint must be configured in aem_osgi_config.");
 
         startQueueManager(config);
         client = ClientBuilder.newBuilder().build().register(JacksonJsonProvider.class);
     }
 
-    private void startQueueManager(final Map<String, Object> config) {
-        long waitTime = PropertiesUtil.toLong(config.get(WAIT_TIME), DEFAULT_WAIT_TIME);
-        int maxRetries = PropertiesUtil.toInteger(config.get(MAX_RETRIES), DEFAULT_MAX_RETRIES);
-        String errorEmailRecipients = PropertiesUtil.toString(config.get(ERROR_EMAIL_RECIPIENTS), "");
+    private void startQueueManager(final Config config) {
+        long waitTime = config.waitTime();
+        if (waitTime == 0L) {
+            waitTime = DEFAULT_WAIT_TIME;
+        }
+        int maxRetries = config.maxRetries();
+        if (maxRetries == 0) {
+            maxRetries = DEFAULT_MAX_RETRIES;
+        }
+        String errorEmailRecipients = config.errorEmailRecipients();
 
         if (internalQueueManager == null) {
             internalQueueManager = new UploadQueue(
