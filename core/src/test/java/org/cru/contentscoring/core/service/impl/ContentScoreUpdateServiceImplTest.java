@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_ENDPOINT;
+import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.API_KEY_LOCATION;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.CONTENT_SCORE_UPDATED;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.ERROR_EMAIL_RECIPIENTS;
 import static org.cru.contentscoring.core.service.impl.ContentScoreUpdateServiceImpl.MAX_RETRIES;
@@ -85,6 +86,7 @@ public class ContentScoreUpdateServiceImplTest {
     public void testActivation() {
         Map<String, Object> config = Maps.newHashMap();
         config.put(API_ENDPOINT, "http://somewhere-out.there.com");
+        config.put(API_KEY_LOCATION, UUID.randomUUID().toString());
         config.put(WAIT_TIME, 10000L);
         config.put(MAX_RETRIES, 5);
         config.put(ERROR_EMAIL_RECIPIENTS, "some.email@example.com,another.email@example.com");

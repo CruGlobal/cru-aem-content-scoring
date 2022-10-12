@@ -5,4 +5,5 @@
           waitTime="5000"
           maxRetries="3"
           errorEmailRecipients=""
-          urlMapperEndpoint="http://local.cru.org:4503/bin/cru/url/mapper.txt"/>
+          urlMapperEndpoint="http://local.cru.org:4503/bin/cru/url/mapper.txt"
+          contentScoringApiKey="$[secret:AEM_CONTENT_SCORING_API_KEY]"/>

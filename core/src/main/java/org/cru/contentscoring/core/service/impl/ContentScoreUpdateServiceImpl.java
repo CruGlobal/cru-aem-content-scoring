@@ -71,6 +71,11 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
                 name = "URL Mapper Endpoint",
                 description = "URL mapper endpoint on the publishers")
         String urlMapperEndpoint();
+
+        @AttributeDefinition(
+                name = "Content Scoring API key",
+                description = "API key for the Content Scoring API")
+        String contentScoringApiKey();
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ContentScoreUpdateServiceImpl.class);
@@ -90,7 +95,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
 
     static final String URL_MAPPER_ENDPOINT = "urlMapperEndpoint";
 
-    private static final String API_KEY_LOCATION = "AEM_CONTENT_SCORING_API_KEY";
+    static final String API_KEY_LOCATION = "contentScoringApiKey";
     static final String VANITY_PATH = "sling:vanityPath";
     static final String VANITY_REDIRECT = "sling:redirect";
     private UUID apiKey;
@@ -110,7 +115,7 @@ public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService 
         apiEndpoint = PropertiesUtil.toString(config.get(API_ENDPOINT), null);
         LOG.debug("configure: apiEndpoint='{}''", apiEndpoint);
 
-        String apiKeyString = System.getenv(API_KEY_LOCATION);
+        String apiKeyString = PropertiesUtil.toString(config.get(API_KEY_LOCATION), null);
         Preconditions.checkNotNull(apiKeyString, "API Key is null!");
         apiKey = UUID.fromString(apiKeyString);
 
