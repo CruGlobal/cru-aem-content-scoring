@@ -115,17 +115,9 @@
                 <artifactId>content-package-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <filterSource>src/main/content/META-INF/vault/filter.xml</filterSource>
                     <verbose>true</verbose>
                     <failOnError>true</failOnError>
                     <group>Cru</group>
-                    <embeddeds>
-                        <embedded>
-                            <groupId>org.cru</groupId>
-                            <artifactId>aem-content-scoring.core</artifactId>
-                            <target>/apps/aem-content-scoring/install</target>
-                        </embedded>
-                    </embeddeds>
                 </configuration>
             </plugin>
 
