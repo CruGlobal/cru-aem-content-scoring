@@ -5,4 +5,5 @@
           waitTime="5000"
           maxRetries="3"
           errorEmailRecipients=""
-          urlMapperEndpoint="https://stage.cru.org/bin/cru/url/mapper.txt"/>
+          urlMapperEndpoint="https://stage.cru.org/bin/cru/url/mapper.txt"
+          contentScoringApiKey="$[secret:AEM_CONTENT_SCORING_API_KEY]"/>
