@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.Servlet;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.SlingHttpServletResponse;
 import org.apache.sling.api.request.RequestParameter;
@@ -20,7 +19,7 @@ import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.servlets.HttpConstants;
 import org.apache.sling.api.servlets.SlingSafeMethodsServlet;
-import org.apache.sling.settings.SlingSettingsService;
+import org.cru.commons.util.EnvironmentTypeProvider;
 import org.cru.contentscoring.core.provider.AbsolutePathUriProvider;
 import org.cru.contentscoring.core.provider.VanityPathUriProvider;
 import org.cru.contentscoring.core.util.SystemUtils;
@@ -49,14 +48,14 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
     VanityPathUriProvider vanityPathUriProvider;
 
     @Reference
-    private SlingSettingsService slingSettingsService;
+    SystemUtils systemUtils;
 
     @Reference
-    SystemUtils systemUtils;
+    EnvironmentTypeProvider environmentTypeProvider;
 
     @Activate
     public void activate() {
-        String environment = determineEnvironment();
+        String environment = environmentTypeProvider.getEnvironmentType().getShortCode();
 
         if (absolutePathUriProvider == null) {
             absolutePathUriProvider = new AbsolutePathUriProvider(environment);
@@ -64,16 +63,6 @@ public class ResourceUrlMapperServlet extends SlingSafeMethodsServlet {
         if (vanityPathUriProvider == null) {
             vanityPathUriProvider = new VanityPathUriProvider(environment);
         }
-    }
-
-    private String determineEnvironment() {
-        Set<String> possibleEnvironments = ImmutableSet.of("dev", "stage", "prod");
-        for (String runMode : slingSettingsService.getRunModes()) {
-            if (possibleEnvironments.contains(runMode)) {
-                return runMode;
-            }
-        }
-        throw new IllegalStateException("Failed to determine environment");
     }
 
     @Override

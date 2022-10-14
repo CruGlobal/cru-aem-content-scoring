@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.cru</groupId>
         <artifactId>aem-content-scoring</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>aem-content-scoring.core</artifactId>
@@ -57,6 +57,10 @@
                         <Embed-Directory>OSGI-INF/lib</Embed-Directory>
                         <Import-Package>
                             javax.inject;version=0.0.0,
+                            com.google.common.base;version=22.0.0,
+                            com.google.common.collect;version=22.0.0,
+                            jersey.repackaged.com.google.common.base,
+                            jersey.repackaged.com.google.common.collect,
                             !com.sun.jdi.*,
                             !jersey.repackaged.*,
                             !javax.validation.metadata,
@@ -82,19 +86,22 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.sling</groupId>
-                        <artifactId>maven-sling-plugin</artifactId>
-                        <configuration>
-                            <!-- Note that this requires /apps/aem-content-scoring/install to exist!!          -->
-                            <!--    This is typically the case when ui.apps is deployed first                -->
-                            <!--    Otherwise, create /apps/aem-content-scoring/install manually (CRXDE|Lite)  -->
-                            <slingUrlSuffix>/apps/aem-content-scoring/install/</slingUrlSuffix>
-                            <failOnError>true</failOnError>
-                        </configuration>
-                    </plugin>
-                </plugins>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.sling</groupId>
+                            <artifactId>sling-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>install-bundle</id>
+                                    <goals>
+                                        <goal>install</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
     </profiles>
@@ -129,8 +136,7 @@
         </dependency>
         <dependency>
             <groupId>com.adobe.aem</groupId>
-            <artifactId>uber-jar</artifactId>
-            <classifier>apis</classifier>
+            <artifactId>aem-sdk-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
