@@ -8,7 +8,7 @@ jobs:
   aem-cloud-repo-sync:
     uses: CruGlobal/.github/.github/workflows/aem-cloud-repo-sync.yml@v1
     with:
-        cloud-repository-name: aem-content-scoring
+        cloud-repository-name: cru-aem-content-scoring
         aem-cloud-branch-name: ${{ github.ref_name }}
         user-name: "${GITHUB_ACTOR}"
         user-email: "${GITHUB_ACTOR}@users.noreply.github.com"
