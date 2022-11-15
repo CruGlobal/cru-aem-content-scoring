@@ -256,10 +256,14 @@ public class UploadQueue implements Runnable {
         }
     }
 
-    private String parseErrorMessage(final String jsonResponse, final ObjectMapper objectMapper) throws IOException {
-        JsonParser jsonParser = objectMapper.getFactory().createParser(jsonResponse);
-        ErrorResponse errorResponse = jsonParser.readValueAs(ErrorResponse.class);
-        return errorResponse.getMessage();
+    private String parseErrorMessage(final String jsonResponse, final ObjectMapper objectMapper) {
+        try (JsonParser jsonParser = objectMapper.getFactory().createParser(jsonResponse)) {
+            ErrorResponse errorResponse = jsonParser.readValueAs(ErrorResponse.class);
+            return errorResponse.getMessage();
+        } catch (Exception e) {
+            LOG.error("Failed to parse the JSON {}", jsonResponse);
+            return "Failed to update the score";
+        }
     }
 
     private List<ContentScoreUpdateRequest> getBatch() throws JsonProcessingException {
