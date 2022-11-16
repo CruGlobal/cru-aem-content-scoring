@@ -57,6 +57,8 @@
                         <Embed-Directory>OSGI-INF/lib</Embed-Directory>
                         <Import-Package>
                             javax.inject;version=0.0.0,
+                            com.google.common.base;version=22.0.0,
+                            com.google.common.collect;version=22.0.0,
                             jersey.repackaged.com.google.common.base,
                             jersey.repackaged.com.google.common.collect,
                             !com.sun.jdi.*,
@@ -117,10 +119,6 @@
             <scope>provided</scope>
         </dependency>
         <!-- Other Dependencies -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
