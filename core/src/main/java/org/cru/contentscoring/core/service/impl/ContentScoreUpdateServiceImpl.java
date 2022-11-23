@@ -38,7 +38,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
-@Component(service = ContentScoreUpdateService.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
+//@Component(service = ContentScoreUpdateService.class, configurationPolicy = ConfigurationPolicy.REQUIRE)
 @Designate(ocd = ContentScoreUpdateServiceImpl.Config.class)
 public class ContentScoreUpdateServiceImpl implements ContentScoreUpdateService {
 
