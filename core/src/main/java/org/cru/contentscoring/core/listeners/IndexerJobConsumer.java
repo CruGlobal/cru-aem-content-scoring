@@ -9,7 +9,7 @@ import org.apache.sling.event.jobs.consumer.JobConsumer;
 import org.apache.sling.settings.SlingSettingsService;
 import org.cru.commons.event.service.impl.ReplicationListenerOnPublishServiceImpl;
 import org.cru.contentscoring.core.service.ContentScoreUpdateService;
-import org.osgi.service.component.annotations.Component;
+//import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.slf4j.Logger;
@@ -20,11 +20,11 @@ import com.day.cq.replication.ReplicationActionType;
 import com.day.cq.wcm.api.Page;
 import com.day.cq.wcm.api.PageManager;
 
-@Component(
-    service = JobConsumer.class,
-    immediate = true,
-    property = {
-        JobConsumer.PROPERTY_TOPICS + "=" + ReplicationListenerOnPublishServiceImpl.SCORING_JOB_NAME})
+//@Component(
+//    service = JobConsumer.class,
+//    immediate = true,
+//    property = {
+//        JobConsumer.PROPERTY_TOPICS + "=" + ReplicationListenerOnPublishServiceImpl.SCORING_JOB_NAME})
 public class IndexerJobConsumer implements JobConsumer {
    
     private static final Logger LOG = LoggerFactory.getLogger(IndexerJobConsumer.class);
@@ -40,11 +40,13 @@ public class IndexerJobConsumer implements JobConsumer {
 
     public JobResult process(final Job job) {
         if (!slingSettingsService.getRunModes().contains("author")) {
+            LOG.debug("Not on the author environment, skipping");
             return JobResult.CANCEL;
         }
 
         ReplicationAction action =
             (ReplicationAction) job.getProperty(ReplicationListenerOnPublishServiceImpl.EVENT_PARAM);
+        LOG.debug("Processing content scoring job on: {}", action.getPath());
 
         try (ResourceResolver resourceResolver = resolverFactory.getServiceResourceResolver(null)) {
             Session session = resourceResolver.adaptTo(Session.class);
@@ -63,6 +65,8 @@ public class IndexerJobConsumer implements JobConsumer {
                     contentScoreUpdateService.updateContentScore(page);
                     session.save();
                 }
+            } else {
+                LOG.debug("Page was null for {}", action.getPath());
             }
             return JobResult.OK;
         } catch (Exception e) {
